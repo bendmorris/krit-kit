@@ -1,0 +1,37 @@
+struct Window {
+    public static function new(title: CString, width: Uint16, height: Uint16) {
+        var window = SDL_CreateWindow(
+            title,
+            ${SDL_WINDOWPOS_UNDEFINED: Uint},
+            ${SDL_WINDOWPOS_UNDEFINED: Uint},
+            width, height,
+            ```SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE```
+        );
+        if window == null {
+            panic(SDL_GetError());
+        }
+        var glContext = SDL_GL_CreateContext(window);
+        if glContext == null {
+            panic(SDL_GetError());
+        }
+        var surface = SDL_GetWindowSurface(window);
+
+        var w = struct Window {window, glContext, surface};
+        w.getSize();
+        return w;
+    }
+
+    public var dimensions: Dimensions[Int] = Dimensions[Int].new(0, 0);
+
+    var window: Ptr[SDL_Window];
+    var glContext: Ptr[SDL_GLContext];
+    var surface: Ptr[SDL_Surface];
+
+    public function getSize() {
+        SDL_GetWindowSize(this.window, this.dimensions.width, this.dimensions.height);
+    }
+
+    public function destroy() {
+        SDL_DestroyWindow(this.window);
+    }
+}

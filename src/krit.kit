@@ -1,0 +1,42 @@
+import krit.*;
+import krit.backend.app;
+import krit.scale.*;
+
+abstract Krit: Void {
+    public static function run(options: Ptr[KritOptions]) {
+        var app: App;
+        app.init(options.title, options.width, options.height, options.scaleMode);
+        app.run();
+    }
+}
+
+struct KritOptions {
+    public var title: CString = "Krit";
+    public var width: Int;
+    public var height: Int;
+    public var scaleMode: Box[ScreenScaleMode];
+
+    public function init() {
+        this.title = "Krit";
+        this.width = 320;
+        this.height = 240;
+        this.scaleMode = DefaultStretchScaleMode;
+        return &this;
+    }
+
+    public function setSize(x: Int, y: Int) {
+        this.width = x;
+        this.height = y;
+        return &this;
+    }
+
+    public function setTitle(t: CString) {
+        this.title = t;
+        return &this;
+    }
+
+    public function setScaleMode(scaleMode: Box[ScreenScaleMode]) {
+        this.scaleMode = scaleMode;
+        return &this;
+    }
+}

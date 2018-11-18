@@ -1,0 +1,21 @@
+struct Engine {
+    public static function new(screen: Ptr[Screen]): Engine {
+        return struct Engine {screen};
+    }
+
+    public var paused: Bool = false;
+    public var screen: Ptr[Screen];
+
+    public function update() {
+        if this.paused {
+            return;
+        }
+    }
+
+    rules {
+        /**
+         * Allow accessing fields on Engine as a singleton.
+         */
+        // ($Self.$x) => $Self._instance.$x;
+    }
+}

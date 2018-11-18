@@ -1,0 +1,7 @@
+enum StretchScaleMode {
+    DefaultStretchScaleMode;
+}
+
+implement ScreenScaleMode for StretchScaleMode {
+    public function onResize(screen: Ptr[Screen], width: Int, height: Int) {}
+}

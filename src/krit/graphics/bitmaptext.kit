@@ -1,0 +1,21 @@
+struct BitmapText {
+    public var position: Point = Point.new();
+    public var dimensions: Dimensions = Point.new();
+    public var scale: ScaleFactor = ScaleFactor.new();
+    public var color: Color = Color.White;
+    public var alpha: Float = 1;
+    public var active: Bool = true;
+    public var visible: Bool = true;
+    public var text: String;
+
+    public static function new(source: ImageType, text: String, options: BitmapTextOptions);
+}
+
+struct BitmapTextOptions {
+    // ...
+}
+
+implement Graphic for BitmapText {
+    public function render(point: Point, camera: Camera): Void;
+    public function update(): Void;
+}

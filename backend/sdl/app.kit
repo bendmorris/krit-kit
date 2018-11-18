@@ -1,0 +1,54 @@
+import krit.backend.window;
+
+struct App {
+    public var title: CString;
+    public var window: Window;
+    public var glContext: SDL_GLContext;
+
+    public var engine: Engine;
+    public var screen: Screen;
+
+    var running: Bool;
+
+    public function init(title: CString, width: Int, height: Int, scaleMode: Box[ScreenScaleMode]): App {
+        if SDL_Init(${SDL_INIT_VIDEO: Uint}) < 0 {
+            panic(SDL_GetError());
+        }
+
+        this.window = Window.new(title, width, height);
+        this.screen = Screen.new(this.window, width, height, scaleMode);
+        this.engine = Engine.new(this.screen);
+
+        this.running = false;
+    }
+
+    public function run() {
+        this.running = true;
+        while this.running {
+            this.handleEvents();
+            this.engine.update();
+            SDL_Delay(2);
+        }
+    }
+
+    public function destroy() {
+        this.window.destroy();
+    }
+
+    function handleEvents() {
+        var event: SDL_Event;
+        while SDL_PollEvent(event) != 0 {
+            if event.type == ${SDL_QUIT: Uint} {
+                this.running = false;
+            } else if event.type == ${SDL_WINDOWEVENT: Uint} {
+                if event.window.event == ${SDL_WINDOWEVENT_SIZE_CHANGED: Uint} {
+                    // resize
+                    var w = event.window.data1;
+                    var h = event.window.data2;
+                    this.window.dimensions.setTo(w, h);
+                    this.screen.onResize(w, h);
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+name: krit
+version: 0.1.0
+author: "Ben Morris <ben@bendmorris.com>"
+description: "A cross-platform Kit game engine"
+url: https://www.krit.io
+
+source:
+- src
+- "backend/sdl:kit.backend"
+
+dependencies:
+- lib: SDL2

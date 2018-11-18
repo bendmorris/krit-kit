@@ -1,0 +1,81 @@
+import kit.math;
+
+struct Point[T: Numeric = Double] {
+    public var x: T = 0;
+    public var y: T = 0;
+
+    rules {
+        ($this.length) => sqrt(this.x * this.x + this.y * this.y);
+        ($this * (i: T)) => this.scale(i);
+        ($this / (i: T)) => this.scale(1 / i);
+
+        ($this + (other: Self)) => Point.new($this.x + other.x, $this.y + other.y);
+        ($this - (other: Self)) => Point.new($this.x - other.x, $this.y - other.y);
+    }
+
+    public static function new(x: T, y: T) {
+        return struct Self {x, y};
+    }
+
+    public function setTo(x: T, y: T): Self {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+
+    public function copyFrom(p: Self): Self {
+        this.x = p.x;
+        this.y = p.y;
+        return this;
+    }
+
+    public function invert(): Self {
+        this.x = -this.x;
+        this.y = -this.y;
+        return this;
+    }
+
+    public function scale(s: T): Self {
+        this.x *= s;
+        this.y *= s;
+        return this;
+    }
+
+    public function squaredDistance(other: Self): T {
+        var dx = this.x - other.x;
+        var dy = this.y - other.y;
+        return dx * dx + dy * dy;
+    }
+
+    public function distance(other: Self): Double {
+        var dx = this.x - other.x;
+        var dy = this.y - other.y;
+        return sqrt(dx * dx + dy * dy);
+    }
+
+    // public function normalize(): Self {
+    //     static {
+    //         if T is NumericMixed {
+    //             var normal = 1 / this.length;
+    //             this.x *= normal;
+    //             this.y *= normal;
+    //         }
+    //         return this;
+    //     }
+    // }
+
+    // public function rotate(angle: T): Self {
+    //     var s = sin(angle);
+    //     var c = cos(angle);
+    //     this.setTo(c * this.x - s * this.y, s * this.x + c * this.y);
+    //     return this;
+    // }
+
+    public function dot(other: Self): T {
+        return (this.x * other.x) + (this.y * other.y);
+    }
+
+    public function clone(): Self {
+        return Self.new(this.x, this.y);
+    }
+}

@@ -1,0 +1,33 @@
+struct Scene {
+    public var bgColor: Color = Color.Black;
+    public var bgAlpha: Float = 1;
+    public var camera: Camera;
+
+    var toUpdate: Vector[Entity];
+    var toAdd: Vector[Entity];
+    var toRemove: Vector[Entity];
+
+    var layerList: Vector[Int];
+    var layers: Map[Int, Vector[Entity]];
+
+    public static function new(allocator: Box[Allocator]) using implicit allocator {
+        var camera = Camera.new();
+        var toUpdate = Vector.new(16);
+        var toAdd = Vector.new(16);
+        var toRemove = Vector.new(16);
+        var layerList = Vector.new(16);
+        var layers = Map.new(16);
+        return struct Scene {
+            camera,
+            toUpdate,
+            toAdd,
+            toRemove,
+            layerList,
+            layers,
+        };
+    }
+
+    public function update() {
+
+    }
+}

@@ -1,0 +1,16 @@
+struct NineSlice {
+    public var position: Point = Point.new();
+    public var dimensions: Dimensions = Point.new();
+    public var scale: ScaleFactor = ScaleFactor.new();
+    public var color: Color = Color.White;
+    public var alpha: Float = 1;
+    public var active: Bool = false;
+    public var visible: Bool = true;
+
+    public static function new(source: ImageType);
+}
+
+implement Graphic for NineSlice {
+    public function render(point: Point, camera: Camera): Void;
+    public function update(): Void;
+}

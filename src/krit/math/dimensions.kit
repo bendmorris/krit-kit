@@ -1,0 +1,10 @@
+abstract Dimensions[T: Numeric = Double]: Point[T] {
+    rules {
+        ($this.width) => $this.x;
+        ($this.height) => $this.y;
+    }
+
+    public static function new(x: T, y: T): Self {
+        return struct Self {x, y};
+    }
+}

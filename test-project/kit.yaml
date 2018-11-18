@@ -1,0 +1,5 @@
+source:
+- src
+- ../src
+- ../backend/sdl/
+
