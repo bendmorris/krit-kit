@@ -1,0 +1,12 @@
+abstract GLObject: Const[GLuint];
+
+abstract GL: Void {
+    public static function checkForErrors(msg: CString): Bool {
+        var err = glGetError();
+        if err != 0 {
+            printf("GL error: %s: %i\n", msg, err);
+            return false;
+        }
+        return true;
+    }
+}

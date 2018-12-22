@@ -1,0 +1,25 @@
+#[promote] abstract Signal: function () -> Void {
+    public function invoke() {
+        if this != (null as Signal) {
+            this();
+        }
+    }
+}
+
+#[promote] abstract Signal1[A]: function(A) -> Void {
+    public function invoke(a: A) {
+        if this != (null as Self) {
+            this(a);
+        }
+    }
+}
+
+#[promote] abstract Signal2[A, B]: function(A, B) -> Void {
+    public function invoke(a: A, b: B) {
+        if this != (null as Self) {
+            this(a, b);
+        }
+    }
+}
+
+typedef TimeSignal = Signal1[Double];

@@ -1,25 +1,31 @@
 struct GraphicList {
     public var position: Point = Point.new();
-    public var dimensions: Dimensions = Point.new();
+    public var dimensions: Dimensions[Int] = Dimensions[Int].new();
     public var scale: ScaleFactor = ScaleFactor.new();
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var active: Bool = true;
     public var visible: Bool = true;
 
-    public static function new(source: ImageType);
+    var graphics: Vector[Box[Graphic]];
+
+    public static function new(allocator: Box[Allocator], source: ImageType) {
+        return struct GraphicList {
+            graphics: Vector.new(16),
+        };
+    }
 }
 
-implement Graphic for BitmapText {
-    public function render(point: Point, camera: Camera): Void {
-        for graphic in graphics {
+implement Graphic for GraphicList {
+    public function render(point: Point, camera: Ptr[Camera]): Void {
+        for graphic in this.graphics {
             graphic.render(point, camera);
         }
     }
 
     public function update(): Void {
-        for graphic in graphics {
-            graphic.render(point, camera);
+        for graphic in this.graphics {
+            graphic.update();
         }
     }
 }

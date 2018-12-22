@@ -2,25 +2,24 @@ import krit.*;
 import krit.backend.app;
 import krit.scale.*;
 
-abstract Krit: Void {
-    public static function run(options: Ptr[KritOptions]) {
-        var app: App;
-        app.init(options.title, options.width, options.height, options.scaleMode);
-        app.run();
-    }
-}
+typedef Krit = App;
 
+/**
+ * Project option builder.
+ */
 struct KritOptions {
     public var title: CString = "Krit";
     public var width: Int;
     public var height: Int;
-    public var scaleMode: Box[ScreenScaleMode];
+    public var fps: Int;
+    public var fixedFrameRate: Bool;
 
     public function init() {
         this.title = "Krit";
         this.width = 320;
         this.height = 240;
-        this.scaleMode = DefaultStretchScaleMode;
+        this.fps = 60;
+        this.fixedFrameRate = true;
         return &this;
     }
 
@@ -35,8 +34,9 @@ struct KritOptions {
         return &this;
     }
 
-    public function setScaleMode(scaleMode: Box[ScreenScaleMode]) {
-        this.scaleMode = scaleMode;
+    public function setFrameRate(f: Int, fixed: Bool) {
+        this.fps = f;
+        this.fixedFrameRate = fixed;
         return &this;
     }
 }

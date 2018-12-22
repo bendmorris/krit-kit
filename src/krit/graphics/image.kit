@@ -1,20 +1,30 @@
-import krit.backend.imagedata;
-
 struct Image {
     public var position: Point = Point.new();
-    public var dimensions: Dimensions = Point.new();
+    public var dimensions: Dimensions[Int] = Dimensions[Int].new();
     public var scale: ScaleFactor = ScaleFactor.new();
     public var color: Color = Color.White;
     public var alpha: Float = 1;
-    public var active: Bool = false;
     public var visible: Bool = true;
+    public var blendMode: BlendMode = Alpha;
 
     var imageData: Ptr[ImageData];
+    var imageRegion: Rectangle[Uint];
 
-    public static function new(source: ImageType);
+    public static function new(source: ImageType) {
+        return struct Image {
+            imageData: source.data,
+            imageRegion: source.region,
+        };
+    }
+
+    public function render() {
+        if !this.visible {
+            return;
+        }
+    }
 }
 
 implement Graphic for Image {
-    public function render(point: Point, camera: Camera): Void;
-    public function update(): Void;
+    public function render(point: Point, camera: Ptr[Camera]): Void {}
+    public function update(): Void {}
 }

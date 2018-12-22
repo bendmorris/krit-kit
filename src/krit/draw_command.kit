@@ -1,0 +1,176 @@
+struct DrawCommandKey {
+    public var shader: Ptr[Shader];
+    public var imageData: Ptr[ImageData];
+    public var smooth: Bool;
+    public var blend: BlendMode;
+    public var clip: Option[Rectangle];
+
+    public function eq(other: DrawCommandKey): Bool {
+        if this.shader == other.shader &&
+            this.imageData == other.imageData &&
+            this.smooth == other.smooth &&
+            this.blend == other.blend {
+            match this.clip {
+                Some(x) => match other.clip {
+                    Some(y) => return x.eq(y);
+                }
+                None => return other.clip.isNone();
+            }
+        }
+        return false;
+    }
+}
+
+struct TriangleData {
+    public var t: Triangle = Triangle.new();
+    public var uv: Triangle = Triangle.new();
+    public var color: ColorWithAlpha = Color.White.withAlpha(1);
+
+    public static function new() {
+        return struct TriangleData;
+    }
+
+    /**
+     * Returns two points representing the top left and bottom right of the
+     * AABB containing this triangle.
+     */
+    public function bounds(): (Point, Point) {
+        return (
+            struct Point {x: Self.minOf3(this.t.p1.x, this.t.p2.x, this.t.p3.x), y: Self.minOf3(this.t.p1.y, this.t.p2.y, this.t.p3.y)},
+            struct Point {x: Self.maxOf3(this.t.p1.x, this.t.p2.x, this.t.p3.x), y: Self.maxOf3(this.t.p1.y, this.t.p2.y, this.t.p3.y)}
+        );
+    }
+
+    static function minOf3(a: Double, b: Double, c: Double): Double {
+        return if a > b then (if b > c then c else b) else (if a > c then c else a);
+    }
+
+    static function maxOf3(a: Double, b: Double, c: Double): Double {
+        return if a < b then (if b < c then c else b) else (if a < c then c else a);
+    }
+}
+
+struct DrawCommand {
+    public var key: DrawCommandKey;
+    public var triangles: CArray[TriangleData, 0x1000];
+    public var length: Int = 0;
+
+    public function matches(key: DrawCommandKey): Bool {
+        return this.key.eq(key);
+    }
+
+    public function init(key: DrawCommandKey) {
+        this.reset();
+        this.key = key;
+    }
+
+    public function reset() {
+        this.length = 0;
+    }
+
+    public function isFull(): Bool {
+        return this.length >= 0x1000;
+    }
+
+    public function addTriangle(t: Triangle, uv: Triangle, color: ColorWithAlpha) {
+        var triangle = &this.triangles[this.length++];
+        triangle.t = t;
+        triangle.uv = uv;
+        triangle.color = color;
+    }
+
+    rules {
+        ($this.shader) => $this.key.shader;
+        ($this.imageData) => $this.key.imageData;
+        ($this.smooth) => $this.key.smooth;
+        ($this.blend) => $this.key.blend;
+        ($this.clip) => $this.key.clip;
+
+        (for $ident in $this {$e}) => for $ident in (struct Slice {length: $this.length, data: $this.triangles}) { {$e} }
+    }
+}
+
+struct DrawCommandBatch {
+    public var commands: Vector[DrawCommand];
+
+    public static function new(allocator: Box[Allocator]) {
+        return struct Self {
+            commands: Vector.new(0x1000),
+        };
+    }
+
+    public function getDrawCommand(key: DrawCommandKey, dims: Triangle, flexibleLayer: Bool): Ptr[DrawCommand] {
+        // TODO: fallthrough logic
+        if this.commands.length > 0 {
+            // FIXME: kit bug; temp variable evaluation in short circuited expression
+            if this.commands.unsafeLast.matches(key) && !this.commands.unsafeLast.isFull() {
+                return &(this.commands.unsafeLast);
+            }
+        }
+        var next = this.commands.grow();
+        next.init(key);
+        return next;
+    }
+
+    public function addTriangle(key: DrawCommandKey, t: Triangle, uv: Triangle, color: ColorWithAlpha, flexibleLayer: Bool) {
+        if color.getAlpha() > 0 {
+            var command = this.getDrawCommand(key, t, flexibleLayer);
+            command.addTriangle(t, uv, color);
+        }
+    }
+
+    public function addRect(key: DrawCommandKey, rect: Rectangle, matrix: Matrix, color: ColorWithAlpha, flexibleLayer: Bool) {
+        var uvx1: Double;
+        var uvy1: Double;
+        var uvx2: Double;
+        var uvy2: Double;
+        var imageData = key.imageData;
+        if imageData == null {
+            uvx1 = uvy1 = 0;
+            uvx2 = rect.width;
+            uvy2 = rect.height;
+        } else {
+            uvx1 = rect.x / imageData.width;
+            uvy1 = rect.y / imageData.height;
+            uvx2 = (rect.x + rect.width) / imageData.width;
+            uvy2 = (rect.y + rect.height) / imageData.height;
+        }
+
+        // matrix transformations
+        var xa = rect.width * matrix.a + matrix.tx;
+        var yb = rect.width * matrix.b + matrix.ty;
+        var xc = rect.height * matrix.c + matrix.tx;
+        var yd = rect.height * matrix.d + matrix.ty;
+
+        this.addTriangle(key,
+            struct Triangle {
+                p1: Point.new().setTo(matrix.tx, matrix.ty),
+                p2: Point.new().setTo(xa, yb),
+                p3: Point.new().setTo(xc, yd),
+            },
+            struct Triangle {
+                p1: Point.new().setTo(uvx1, uvy1),
+                p2: Point.new().setTo(uvx2, uvy1),
+                p3: Point.new().setTo(uvx1, uvy2),
+            },
+            color, flexibleLayer
+        );
+        this.addTriangle(key,
+            struct Triangle {
+                p1: Point.new().setTo(xc, yd),
+                p2: Point.new().setTo(xa, yb),
+                p3: Point.new().setTo(xa + rect.height * matrix.c, yb + rect.height * matrix.d),
+            },
+            struct Triangle {
+                p1: Point.new().setTo(uvx1, uvy2),
+                p2: Point.new().setTo(uvx2, uvy1),
+                p3: Point.new().setTo(uvx2, uvy2),
+            },
+            color, flexibleLayer
+        );
+    }
+
+    public function clear() {
+        this.commands.clear();
+    }
+}

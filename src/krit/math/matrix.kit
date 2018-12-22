@@ -1,0 +1,22 @@
+struct Matrix {
+    public var a: Double = 1;
+    public var b: Double = 0;
+    public var c: Double = 0;
+    public var d: Double = 1;
+    public var tx: Double = 0;
+    public var ty: Double = 0;
+
+    public static function new() {
+        return struct Matrix;
+    }
+
+    public function setTo(a: Double, b: Double, c: Double, d: Double, tx: Double, ty: Double): Self {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.d = d;
+        this.tx = tx;
+        this.ty = ty;
+        return this;
+    }
+}

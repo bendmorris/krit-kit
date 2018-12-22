@@ -1,7 +1,12 @@
 struct Scene {
     public var bgColor: Color = Color.Black;
-    public var bgAlpha: Float = 1;
+    public var bgAlpha: Double = 1;
     public var camera: Camera;
+    public var shader: Ptr[SceneShader] = null;
+
+    public var onUpdate: TimeSignal = null;
+    public var postUpdate: Signal = null;
+    public var onRender: Signal1[RenderContext] = null;
 
     var toUpdate: Vector[Entity];
     var toAdd: Vector[Entity];
@@ -10,24 +15,54 @@ struct Scene {
     var layerList: Vector[Int];
     var layers: Map[Int, Vector[Entity]];
 
-    public static function new(allocator: Box[Allocator]) using implicit allocator {
-        var camera = Camera.new();
-        var toUpdate = Vector.new(16);
-        var toAdd = Vector.new(16);
-        var toRemove = Vector.new(16);
-        var layerList = Vector.new(16);
-        var layers = Map.new(16);
+    public static function new(allocator: Box[Allocator]): Self using implicit allocator {
         return struct Scene {
-            camera,
-            toUpdate,
-            toAdd,
-            toRemove,
-            layerList,
-            layers,
+            camera: Camera.new(),
+            toUpdate: Vector.new(16),
+            toAdd: Vector.new(16),
+            toRemove: Vector.new(16),
+            layerList: Vector.new(16),
+            layers: Map.new(16),
         };
     }
 
-    public function update() {
+    public function update(elapsed: Double) {
+        this.onUpdate.invoke(elapsed);
+        this.camera.update();
+        for e in this.toUpdate {
+            if e.active {
+                e.update(elapsed);
+            }
+        }
+        this.postUpdate.invoke();
+    }
 
+    public function render(context: RenderContext) {
+        if this.bgAlpha > 0 {
+            var key = struct DrawCommandKey {
+                imageData: null,
+                shader: null,
+                smooth: true,
+                blend: Alpha,
+                clip: None
+            };
+            context.batch.addRect(key,
+                struct Rectangle {
+                    point: Point.new().setTo(0, 0),
+                    dimensions: Dimensions.new().setTo(context.window.width, context.window.height) as Dimensions,
+                },
+                Matrix.new(),
+                this.bgColor.withAlpha(this.bgAlpha), false
+            );
+        }
+        this.onRender.invoke(context);
+    }
+
+    public function destroy() {
+        this.toUpdate.free();
+        this.toAdd.free();
+        this.toRemove.free();
+        this.layerList.free();
+        this.layers.free();
     }
 }

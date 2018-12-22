@@ -1,0 +1,169 @@
+struct Renderer {
+    public static function new(allocator: Box[Allocator]) {
+        var defaultColorShader = ColorShader.new();
+        var defaultTextureShader = TextureShader.new(None, None);
+        var renderBuffer: GLuint;
+        var renderData = Vector.new(1024);
+        var vao: GLuint;
+        glGenVertexArrays(1, vao);
+        glBindVertexArray(vao);
+        glGenBuffers(1, renderBuffer);
+        return struct Renderer {
+            defaultColorShader,
+            defaultTextureShader,
+            renderBuffer,
+            renderData,
+            vao
+        };
+    }
+
+    static const _ortho: CArray[Float, 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+    static function ortho(x0: Float, x1: Float, y0: Float, y1: Float) {
+        var sx: Float = 1.0 / (x1 - x0);
+        var sy: Float = 1.0 / (y1 - y0);
+        Self._ortho[0] = 2.0 * sx;
+        Self._ortho[5] = 2.0 * sy;
+        Self._ortho[12] = -(x0 + x1) * sx;
+        Self._ortho[13] = -(y0 + y1) * sy;
+    }
+
+    static function setBlendMode(mode: BlendMode) {
+        match mode {
+            Add => {
+                glBlendEquation(GL_FUNC_ADD);
+                glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
+            }
+            Multiply => {
+                glBlendEquation(GL_FUNC_ADD);
+                glBlendFuncSeparate(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+            }
+            // Screen => {
+            //     glBlendEquation(${GL_FUNC_ADD: Int});
+            //     glBlendFuncSeparate(${GL_ONE: Int}, ${GL_ONE_MINUS_SRC_COLOR: Int}, ${GL_ZERO: Int}, ${GL_ONE: Int});
+            // }
+            Subtract => {
+                glBlendEquationSeparate(GL_FUNC_REVERSE_SUBTRACT, GL_FUNC_ADD);
+                glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
+            }
+            Alpha => {
+                glBlendEquation(GL_FUNC_ADD);
+                glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            }
+        }
+        GL.checkForErrors("setBlendMode");
+    }
+
+    public var batch: DrawCommandBatch = DrawCommandBatch.new();
+
+    var fb: Ptr[FrameBuffer] = null;
+    var backFb: Ptr[FrameBuffer] = null;
+    var defaultColorShader: Shader;
+    var defaultTextureShader: Shader;
+    var renderBuffer: GLuint;
+    var renderData: Vector[Char];
+    var vao: GLuint;
+    var bufferPtr: Ptr[Float] = null;
+    var triangleCount = 0;
+
+    var width: Int = 0;
+    var height: Int = 0;
+
+    public function startFrame(context: RenderContext) {
+        var window = context.window;
+        SDL_GL_MakeCurrent(window.windowData.window, window.windowData.glContext);
+        window.windowData.getSize(this.width, this.height);
+        Self.ortho(0, this.width, this.height, 0);
+        window.windowData.getSize(window.dimensions.width, window.dimensions.height);
+        glViewport(0, 0, this.width, this.height);
+        glClearColor(0, 0, 0, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+        this.triangleCount = 0;
+    }
+
+    public function flushFrame(context: RenderContext) {
+        SDL_GL_SwapWindow(context.window.windowData.window);
+        // printf("triangles: %i\n", this.triangleCount);
+    }
+
+    public function startScene(context: RenderContext, scene: Ptr[Scene]) {
+    }
+
+    public function flushScene(context: RenderContext, scene: Ptr[Scene]) {
+        for command in this.batch.commands {
+            this.drawCommand(context, command);
+        }
+        this.batch.clear();
+    }
+
+    function drawCommand(context: RenderContext, drawCommand: Ptr[DrawCommand]) {
+        GL.checkForErrors("drawCommand");
+        var window = context.window;
+
+        var x = 0;
+        var y = 0;
+        var width = this.width;
+        var height = this.height;
+
+        if drawCommand.length > 0 {
+            this.triangleCount += drawCommand.length;
+
+            var clipRect = drawCommand.key.clip;
+            match drawCommand.key.clip {
+                Some(clipRect) => {
+                    width -= clipRect.x as Int;
+                    height -= clipRect.y as Int;
+                    width = fmin(width, clipRect.width) as Int;
+                    height = fmin(height, clipRect.height) as Int;
+                }
+            }
+
+            if width > 0 && height > 0 {
+                var shader = drawCommand.shader;
+                if shader == null {
+                    shader = if drawCommand.imageData == null then &this.defaultColorShader else &this.defaultTextureShader;
+                }
+                shader.bind(Self._ortho);
+
+                if drawCommand.imageData != null {
+                    glBindTexture(GL_TEXTURE_2D, drawCommand.imageData.texture);
+                    glActiveTexture(GL_TEXTURE0);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, if drawCommand.smooth then GL_LINEAR else GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                    GL.checkForErrors("bind texture");
+                }
+
+                match drawCommand.clip {
+                    Some(rect) => {
+                        x += fmax(rect.x, 0);
+                        y += fmax(rect.y, 0);
+                    }
+                }
+
+                glEnable(GL_SCISSOR_TEST);
+                glScissor(x as Int, (this.height - y - height) as Int, width, height);
+
+                var dataSize = drawCommand.length * shader.bytesPerVertex() * 3;
+                this.renderData.ensureSize(dataSize);
+                glBindBuffer(GL_ARRAY_BUFFER, this.renderBuffer);
+                if this.renderData.ref() as Ptr[Float] != this.bufferPtr {
+                    glBufferData(GL_ARRAY_BUFFER, this.renderData.capacity, this.renderData.ref(), GL_DYNAMIC_DRAW);
+                    GL.checkForErrors("buffer data");
+                    this.bufferPtr = this.renderData.ref() as Ptr[Float];
+                }
+                shader.prepare(drawCommand, this.renderData.ref() as Ptr[Float]);
+
+                Self.setBlendMode(drawCommand.blend);
+
+                glDrawArrays(GL_TRIANGLES, 0, drawCommand.length * 3);
+                GL.checkForErrors("render");
+
+                glDisable(GL_SCISSOR_TEST);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                shader.unbind();
+            }
+        }
+    }
+}

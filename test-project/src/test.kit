@@ -1,8 +1,43 @@
 import krit;
+import krit.**;
+import krit.backend.**;
+
+var img: Ptr[ImageData];
+
+function draw(context) {
+    if img == null {
+        img = AssetLoader.loadImage("../kit/assets/logo-128.png");
+    }
+    var key = struct DrawCommandKey {
+        imageData: img,
+        shader: null,
+        smooth: true,
+        blend: Alpha,
+        clip: None
+    };
+    context.batch.addRect(key,
+        struct Rectangle {
+            point: Point.new(),
+            dimensions: Dimensions.new().setTo(img.width, img.height) as Dimensions,
+        },
+        Matrix.new(),
+        Color.White.withAlpha(1), false
+    );
+}
 
 function main() {
     var options: KritOptions;
     options.init();
     options.setSize(640, 480);
-    Krit.run(options);
+    options.setFrameRate(60, true);
+
+    var app: Krit;
+    app.init(options);
+
+    var scene = Scene.new();
+    scene.bgColor = 0x00d4aa;
+    scene.onRender = draw;
+    app.engine.pushScene(scene);
+
+    app.run();
 }

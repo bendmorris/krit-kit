@@ -1,0 +1,25 @@
+struct Window {
+    public static function new(title: CString, width: Int, height: Int) {
+        var w: Window;
+        w.dimensions = Dimensions[Int].new();
+        w.windowData = WindowData.new(w, title, width, height);
+        return w;
+    }
+
+    public var dimensions: Dimensions[Int];
+    // WindowData is backend-specific, so it should be treated as opaque
+    var windowData: WindowData;
+
+    public function destroy() {
+        this.windowData.destroy();
+    }
+
+    public function onResize(width: Int, height: Int) {
+        this.dimensions.setTo(width, height);
+    }
+
+    rules {
+        ($this.width) => $this.dimensions.width;
+        ($this.height) => $this.dimensions.height;
+    }
+}

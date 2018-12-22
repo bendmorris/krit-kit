@@ -1,5 +1,34 @@
 struct Entity {
-    public var position: Point;
-    public var graphic: Box[Graphic];
+    public static function new() {
+        return struct Entity;
+    }
+
+    public var active: Bool = true;
+    public var visible: Bool = true;
+    public var position: Point = Point.new(0, 0);
+    public var graphic: Option[Box[Graphic]] = None;
     // public var mask: Box[Mask];
+
+    public var onUpdate: TimeSignal = null;
+    public var postUpdate: Signal = null;
+    public var onRender: Signal = null;
+    public var postRender: Signal = null;
+
+    public function update(elapsed: Double) {
+        this.onUpdate.invoke(elapsed);
+        match this.graphic {
+            Some(graphic) => if graphic.isActive() {
+                graphic.update();
+            }
+        }
+        this.postUpdate.invoke();
+    }
+
+    public function render(camera: Ptr[Camera]) {
+        this.onRender.invoke();
+        match this.graphic {
+            Some(graphic) => graphic.render(this.position, camera);
+        }
+        this.postRender.invoke();
+    }
 }

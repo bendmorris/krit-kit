@@ -1,33 +1,38 @@
-import krit.backend.window;
+import kit.sys.utils;
 
 struct App {
     public var title: CString;
-    public var window: Window;
-    public var glContext: SDL_GLContext;
-
     public var engine: Engine;
-    public var screen: Screen;
+    public var window: Window;
+    public var renderer: Renderer;
 
     var running: Bool;
 
-    public function init(title: CString, width: Int, height: Int, scaleMode: Box[ScreenScaleMode]): App {
-        if SDL_Init(${SDL_INIT_VIDEO: Uint}) < 0 {
-            panic(SDL_GetError());
-        }
-
-        this.window = Window.new(title, width, height);
-        this.screen = Screen.new(this.window, width, height, scaleMode);
-        this.engine = Engine.new(this.screen);
-
+    public function init(options: Ptr[KritOptions]) {
+        this.window = Window.new(options.title, options.width, options.height);
+        this.engine = Engine.new(options.fps, options.fixedFrameRate);
+        this.renderer = Renderer.new();
         this.running = false;
     }
 
     public function run() {
         this.running = true;
+        var frameStart = 0;
+        var frameDelta: Double = 1 / this.engine.fps;
+        var elapsed: Double = 0;
+        var context = struct RenderContext {
+            window: this.window,
+            renderer: this.renderer,
+            batch: this.renderer.batch,
+        };
         while this.running {
+            frameStart = time();
             this.handleEvents();
-            this.engine.update();
-            SDL_Delay(2);
+            this.engine.update(elapsed);
+            this.engine.render(context);
+            while elapsed < frameDelta {
+                elapsed = time() - frameStart;
+            }
         }
     }
 
@@ -45,8 +50,7 @@ struct App {
                     // resize
                     var w = event.window.data1;
                     var h = event.window.data2;
-                    this.window.dimensions.setTo(w, h);
-                    this.screen.onResize(w, h);
+                    this.window.onResize(w, h);
                 }
             }
         }

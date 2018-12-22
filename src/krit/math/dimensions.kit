@@ -4,7 +4,7 @@ abstract Dimensions[T: Numeric = Double]: Point[T] {
         ($this.height) => $this.y;
     }
 
-    public static function new(x: T, y: T): Self {
-        return struct Self {x, y};
+    public static function new(): Self {
+        return struct Self {x: 1, y: 1};
     }
 }

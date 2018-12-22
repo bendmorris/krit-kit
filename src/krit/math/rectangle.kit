@@ -1,0 +1,22 @@
+struct Rectangle[T: Numeric = Double] {
+    public var point: Point[T];
+    public var dimensions: Dimensions[T];
+
+    public static function new(): Self {
+        return struct Self {
+            point: Point[T].new(),
+            dimensions: Dimensions[T].new(),
+        };
+    }
+
+    public function eq(other: Self) {
+        return this.point.eq(other.point) && this.dimensions.eq(other.dimensions);
+    }
+
+    rules {
+        ($this.x) => $this.point.x;
+        ($this.y) => $this.point.y;
+        ($this.width) => $this.dimensions.width;
+        ($this.height) => $this.dimensions.height;
+    }
+}

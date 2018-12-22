@@ -1,21 +1,56 @@
 struct Engine {
-    public static function new(screen: Ptr[Screen]): Engine {
-        return struct Engine {screen};
+    public static function new(fps: Int, fixedFrameRate: Bool): Engine {
+        var scenes = Vector.new(8);
+        return struct Engine {
+            scenes,
+            fps,
+            fixedFrameRate
+        };
     }
 
     public var paused: Bool = false;
-    public var screen: Ptr[Screen];
+    public var fps: Int;
+    public var fixedFrameRate: Bool;
 
-    public function update() {
+    public var onUpdate: Signal = null;
+    public var postUpdate: Signal = null;
+
+    public var onRender: Signal1[RenderContext] = null;
+    public var postRender: Signal = null;
+
+    var scenes: Vector[Ptr[Scene]];
+
+    public function update(elapsed: Double) {
         if this.paused {
             return;
         }
+        for scene in this.scenes {
+            scene.update(elapsed);
+        }
+    }
+
+    public function render(context: RenderContext) using implicit context {
+        var renderer = context.renderer;
+        this.onRender.invoke(context);
+        renderer.startFrame();
+        for scene in this.scenes {
+            renderer.startScene(scene);
+            scene.render(context);
+            renderer.flushScene(scene);
+        }
+        renderer.flushFrame();
+        this.postRender.invoke();
+    }
+
+    public function pushScene(scene: Ptr[Scene]) {
+        this.scenes.push(scene);
+    }
+
+    public function popScene() {
+        this.scenes.pop();
     }
 
     rules {
-        /**
-         * Allow accessing fields on Engine as a singleton.
-         */
-        // ($Self.$x) => $Self._instance.$x;
+        ($this.scene) => $this.scenes.last;
     }
 }
