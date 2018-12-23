@@ -1,13 +1,6 @@
-struct Rectangle[T: Numeric = Double] {
-    public var point: Point[T];
-    public var dimensions: Dimensions[T];
-
-    public static function new(): Self {
-        return struct Self {
-            point: Point[T].new(),
-            dimensions: Dimensions[T].new(),
-        };
-    }
+struct Rectangle[T: Numeric = Float] {
+    public var point: Point[T] = struct Point[T];
+    public var dimensions: Dimensions[T] = struct Dimensions[T];
 
     public function eq(other: Self) {
         return this.point.eq(other.point) && this.dimensions.eq(other.dimensions);

@@ -1,0 +1,12 @@
+struct ImageRegion {
+    var image: Ptr[ImageData];
+    var rect: Rectangle[Int];
+
+    public static function new(image: Ptr[ImageData], rect: Rectangle[Int]) {
+        return struct Self {image, rect};
+    }
+
+    public static function fromImage(image: Ptr[ImageData]) {
+        return struct Self {image, rect: image.dimensions};
+    }
+}

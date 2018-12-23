@@ -1,26 +1,32 @@
 struct Camera {
-    public var position: Point = Point.new();
-    public var dimensions: Dimensions = Dimensions.new();
+    public var position: Point = struct Point;
+    public var dimensions: Dimensions = struct Dimensions;
     public var scaleMode: Box[CameraScaleMode] = empty;
-    public var scale: ScaleFactor = ScaleFactor.new();
+    public var scale: ScaleFactor = struct ScaleFactor;
     public var pixelSnapping: Bool = false;
 
-    public static function new() {
-        return struct Camera {};
+    public function init() {
+        this = struct Self;
     }
 
-    public function update() {}
+    public function transformX(x: Float) {
+        return (x - this.x) * this.scale.fullScaleX;
+    }
+
+    public function transformY(y: Float) {
+        return (y - this.y) * this.scale.fullScaleY;
+    }
 
     rules {
-        ($this.x) => $this.point.x;
-        ($this.y) => $this.point.y;
+        ($this.x) => $this.position.x;
+        ($this.y) => $this.position.y;
         ($this.width) => $this.dimensions.x;
         ($this.height) => $this.dimensions.y;
     }
 }
 
 trait CameraScaleMode {
-    function getScale(camera: Ptr[Camera], window: Ptr[Window]): Dimensions;
+    function getScale(camera: Ptr[Camera], window: Ptr[Window]): ScaleFactor;
 }
 
 enum CameraType {
@@ -28,7 +34,10 @@ enum CameraType {
 }
 
 implement CameraScaleMode for CameraType {
-    public function getScale(camera: Ptr[Camera], window: Ptr[Window]) {
-        return Dimensions.new().setTo(window.width / camera.dimensions.width, window.height / camera.dimensions.height) as Dimensions;
+    public function getScale(camera: Ptr[Camera], window: Ptr[Window]): ScaleFactor {
+        return struct ScaleFactor {
+            scaleX: window.width / camera.dimensions.width,
+            scaleY: window.height / camera.dimensions.height,
+        };
     }
 }

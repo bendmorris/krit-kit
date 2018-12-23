@@ -2,25 +2,47 @@
     public static var Black: Color = 0x000000;
     public static var White: Color = 0xffffff;
 
-    public function getRed(): Double {
-        return (((this & 0xff0000) >> 16) & 0xff) / 0xff_f64;
+    public static function fromRgb(r: Float, g: Float, b: Float): Color {
+        return
+            (((r * 0xff) as Uint & 0xff) << 16) |
+            (((g * 0xff) as Uint & 0xff) << 8) |
+            ((b * 0xff) as Uint & 0xff);
     }
 
-    public function getGreen(): Double {
-        return (((this & 0xff00) >> 8) & 0xff) / 0xff_f64;
+    public function getRed(): Float {
+        return (((this & 0xff0000) >> 16) & 0xff) / 0xff_f32;
     }
 
-    public function getBlue(): Double {
-        return (this & 0xff) / 0xff_f64;
+    public function getGreen(): Float {
+        return (((this & 0xff00) >> 8) & 0xff) / 0xff_f32;
     }
 
-    public function withAlpha(a: Double): ColorWithAlpha {
-        return ((((0xff_f64 * a) as Uint32 & 0xff) << 24) | this) as ColorWithAlpha;
+    public function getBlue(): Float {
+        return (this & 0xff) / 0xff_f32;
+    }
+
+    public function withAlpha(a: Float): ColorWithAlpha {
+        return ((((0xff_f32 * a) as Uint32 & 0xff) << 24) | this) as ColorWithAlpha;
     }
 }
 
 abstract ColorWithAlpha: Color {
-    public function getAlpha(): Double {
-        return (((this & 0xff000000) >> 24) & 0xff) / 0xff_f64;
+    public static function fromRgba(r: Float, g: Float, b: Float, a: Float): Color {
+        return
+            (((a * 0xff) as Uint & 0xff) << 24) |
+            (((r * 0xff) as Uint & 0xff) << 16) |
+            (((g * 0xff) as Uint & 0xff) << 8) |
+            ((b * 0xff) as Uint & 0xff);
+    }
+
+    public function getAlpha(): Float {
+        return (((this & 0xff000000) >> 24) & 0xff) / 0xff_f32;
+    }
+
+    public function premultiplyAlpha(): ColorWithPremultipliedAlpha {
+        var a = this.getAlpha();
+        return Self.fromRgba(this.getRed() * a, this.getGreen() * a, this.getBlue() * a, a) as ColorWithPremultipliedAlpha;
     }
 }
+
+abstract ColorWithPremultipliedAlpha: ColorWithAlpha;

@@ -1,7 +1,7 @@
 struct Window {
     public static function new(title: CString, width: Int, height: Int) {
         var w: Window;
-        w.dimensions = Dimensions[Int].new();
+        w.dimensions = struct Dimensions[Int];
         w.windowData = WindowData.new(w, title, width, height);
         return w;
     }

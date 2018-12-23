@@ -103,21 +103,22 @@ struct Shader {
         if hasTexCoord {
             for t in 0 ... drawCommand.length {
                 var tri = drawCommand.triangles[t];
-                buffer[i++] = tri.t.p1.x as Float;
-                buffer[i++] = tri.t.p1.y as Float;
-                (buffer as Ptr[Uint32])[i++] = tri.color;
-                buffer[i++] = tri.uv.p1.x as Float;
-                buffer[i++] = tri.uv.p1.y as Float;
-                buffer[i++] = tri.t.p2.x as Float;
-                buffer[i++] = tri.t.p2.y as Float;
-                (buffer as Ptr[Uint32])[i++] = tri.color;
-                buffer[i++] = tri.uv.p2.x as Float;
-                buffer[i++] = tri.uv.p2.y as Float;
-                buffer[i++] = tri.t.p3.x as Float;
-                buffer[i++] = tri.t.p3.y as Float;
-                (buffer as Ptr[Uint32])[i++] = tri.color;
-                buffer[i++] = tri.uv.p3.x as Float;
-                buffer[i++] = tri.uv.p3.y as Float;
+                var c = tri.color;
+                buffer[i++] = tri.t.p1.x;
+                buffer[i++] = tri.t.p1.y;
+                (buffer as Ptr[Uint32])[i++] = c;
+                buffer[i++] = tri.uv.p1.x;
+                buffer[i++] = tri.uv.p1.y;
+                buffer[i++] = tri.t.p2.x;
+                buffer[i++] = tri.t.p2.y;
+                (buffer as Ptr[Uint32])[i++] = c;
+                buffer[i++] = tri.uv.p2.x;
+                buffer[i++] = tri.uv.p2.y;
+                buffer[i++] = tri.t.p3.x;
+                buffer[i++] = tri.t.p3.y;
+                (buffer as Ptr[Uint32])[i++] = c;
+                buffer[i++] = tri.uv.p3.x;
+                buffer[i++] = tri.uv.p3.y;
             }
             glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof Float, buffer);
             GL.checkForErrors("bufferSubData");
@@ -128,15 +129,16 @@ struct Shader {
         } else {
             for t in 0 ... drawCommand.length {
                 var tri = drawCommand.triangles[t];
-                buffer[i++] = tri.t.p1.x as Float;
-                buffer[i++] = tri.t.p1.y as Float;
-                (buffer as Ptr[Uint32])[i++] = tri.color;
-                buffer[i++] = tri.t.p2.x as Float;
-                buffer[i++] = tri.t.p2.y as Float;
-                (buffer as Ptr[Uint32])[i++] = tri.color;
-                buffer[i++] = tri.t.p3.x as Float;
-                buffer[i++] = tri.t.p3.y as Float;
-                (buffer as Ptr[Uint32])[i++] = tri.color;
+                var c = tri.color;
+                buffer[i++] = tri.t.p1.x;
+                buffer[i++] = tri.t.p1.y;
+                (buffer as Ptr[Uint32])[i++] = c;
+                buffer[i++] = tri.t.p2.x;
+                buffer[i++] = tri.t.p2.y;
+                (buffer as Ptr[Uint32])[i++] = c;
+                buffer[i++] = tri.t.p3.x;
+                buffer[i++] = tri.t.p3.y;
+                (buffer as Ptr[Uint32])[i++] = c;
             }
             glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof Float, buffer);
             GL.checkForErrors("bufferSubData");

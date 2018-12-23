@@ -1,5 +1,9 @@
 struct ImageData {
-    public var width: Int;
-    public var height: Int;
     public var texture: GLuint;
+    public var dimensions: Rectangle[Int];
+
+    rules {
+        ($this.width) => $this.dimensions.width;
+        ($this.height) => $this.dimensions.height;
+    }
 }

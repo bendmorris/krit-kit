@@ -9,19 +9,10 @@ typedef Krit = App;
  */
 struct KritOptions {
     public var title: CString = "Krit";
-    public var width: Int;
-    public var height: Int;
-    public var fps: Int;
-    public var fixedFrameRate: Bool;
-
-    public function init() {
-        this.title = "Krit";
-        this.width = 320;
-        this.height = 240;
-        this.fps = 60;
-        this.fixedFrameRate = true;
-        return &this;
-    }
+    public var width: Int = 320;
+    public var height: Int = 240;
+    public var fps: Int = 60;
+    public var fixedFrameRate: Bool = true;
 
     public function setSize(x: Int, y: Int) {
         this.width = x;

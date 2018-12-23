@@ -1,34 +1,39 @@
 struct Entity {
-    public static function new() {
-        return struct Entity;
-    }
-
     public var active: Bool = true;
     public var visible: Bool = true;
-    public var position: Point = Point.new(0, 0);
+    public var position: Point = struct Point;
     public var graphic: Option[Box[Graphic]] = None;
     // public var mask: Box[Mask];
 
-    public var onUpdate: TimeSignal = null;
-    public var postUpdate: Signal = null;
-    public var onRender: Signal = null;
-    public var postRender: Signal = null;
+    public var onUpdate: Signal2[Ptr[Self], Ptr[UpdateContext]] = null;
+    public var postUpdate: Signal2[Ptr[Self], Ptr[UpdateContext]] = null;
+    public var onRender: Signal2[Ptr[Self], Ptr[RenderContext]] = null;
+    public var postRender: Signal2[Ptr[Self], Ptr[RenderContext]] = null;
+    public var onAdd: Signal = null;
+    public var onRemove: Signal = null;
 
-    public function update(elapsed: Double) {
-        this.onUpdate.invoke(elapsed);
+    public var scene: Ptr[Scene] = null;
+    public var userData: Ptr[Void] = null;
+
+    public function update(context: Ptr[UpdateContext]) {
+        this.onUpdate.invoke(this, context);
         match this.graphic {
             Some(graphic) => if graphic.isActive() {
-                graphic.update();
+                graphic.update(context);
             }
         }
-        this.postUpdate.invoke();
+        this.postUpdate.invoke(this, context);
     }
 
-    public function render(camera: Ptr[Camera]) {
-        this.onRender.invoke();
+    public function render(context: Ptr[RenderContext]) {
+        this.onRender.invoke(this, context);
+        var childContext = context.copy();
         match this.graphic {
-            Some(graphic) => graphic.render(this.position, camera);
+            Some(graphic) => {
+                childContext.offset = this.position;
+                graphic.render(childContext);
+            }
         }
-        this.postRender.invoke();
+        this.postRender.invoke(this, context);
     }
 }

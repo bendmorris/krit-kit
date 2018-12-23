@@ -53,7 +53,7 @@ struct Renderer {
         GL.checkForErrors("setBlendMode");
     }
 
-    public var batch: DrawCommandBatch = DrawCommandBatch.new();
+    public var renderSystem: RenderSystem = RenderSystem.new();
 
     var fb: Ptr[FrameBuffer] = null;
     var backFb: Ptr[FrameBuffer] = null;
@@ -89,10 +89,10 @@ struct Renderer {
     }
 
     public function flushScene(context: RenderContext, scene: Ptr[Scene]) {
-        for command in this.batch.commands {
+        for command in this.renderSystem.commands {
             this.drawCommand(context, command);
         }
-        this.batch.clear();
+        this.renderSystem.clear();
     }
 
     function drawCommand(context: RenderContext, drawCommand: Ptr[DrawCommand]) {
@@ -120,13 +120,13 @@ struct Renderer {
             if width > 0 && height > 0 {
                 var shader = drawCommand.shader;
                 if shader == null {
-                    shader = if drawCommand.imageData == null then &this.defaultColorShader else &this.defaultTextureShader;
+                    shader = if drawCommand.image == null then &this.defaultColorShader else &this.defaultTextureShader;
                 }
                 shader.bind(Self._ortho);
 
-                if drawCommand.imageData != null {
-                    glBindTexture(GL_TEXTURE_2D, drawCommand.imageData.texture);
+                if drawCommand.image != null {
                     glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, drawCommand.image.texture);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, if drawCommand.smooth then GL_LINEAR else GL_NEAREST);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

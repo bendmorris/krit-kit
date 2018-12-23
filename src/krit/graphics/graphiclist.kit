@@ -1,7 +1,7 @@
 struct GraphicList {
-    public var position: Point = Point.new();
-    public var dimensions: Dimensions[Int] = Dimensions[Int].new();
-    public var scale: ScaleFactor = ScaleFactor.new();
+    public var position: Point = struct Point;
+    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
+    public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var active: Bool = true;
@@ -9,7 +9,7 @@ struct GraphicList {
 
     var graphics: Vector[Box[Graphic]];
 
-    public static function new(allocator: Box[Allocator], source: ImageType) {
+    public static function new(allocator: Box[Allocator], source: ImageRegion) {
         return struct GraphicList {
             graphics: Vector.new(16),
         };
@@ -17,15 +17,15 @@ struct GraphicList {
 }
 
 implement Graphic for GraphicList {
-    public function render(point: Point, camera: Ptr[Camera]): Void {
+    public function render(context: Ptr[RenderContext]): Void {
         for graphic in this.graphics {
-            graphic.render(point, camera);
+            graphic.render(context);
         }
     }
 
-    public function update(): Void {
+    public function update(context: Ptr[UpdateContext]): Void {
         for graphic in this.graphics {
-            graphic.update();
+            graphic.update(context);
         }
     }
 }

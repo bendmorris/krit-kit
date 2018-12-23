@@ -1,0 +1,29 @@
+struct RenderContext {
+    public var renderer: Ptr[Renderer];
+    public var renderSystem: Ptr[RenderSystem];
+    public var window: Ptr[Window];
+    public var camera: Ptr[Camera] = null;
+    public var offset: Point = struct Point;
+
+    public function transformX(x: Float) {
+        return if this.camera == null then x else this.camera.transformX(x);
+    }
+
+    public function transformY(y: Float) {
+        return if this.camera == null then y else this.camera.transformY(y);
+    }
+
+    public function transform(point: Point): Point {
+        return point.setTo(this.transformX(point.x), this.transformY(point.y));
+    }
+
+    public function copy(): Self {
+        return struct RenderContext {
+            renderer: this.renderer,
+            renderSystem: this.renderSystem,
+            window: this.window,
+            camera: this.camera,
+            offset: this.offset,
+        };
+    }
+}

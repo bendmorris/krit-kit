@@ -2,42 +2,56 @@ import krit;
 import krit.**;
 import krit.backend.**;
 
-var img: Ptr[ImageData];
+// function onUpdate(context) {
+//     context.engine.scene.camera.position.x -= context.elapsed * 10;
+// }
 
-function draw(context) {
-    if img == null {
-        img = AssetLoader.loadImage("../kit/assets/logo-128.png");
+function rotateImage(e: Ptr[Entity], context: Ptr[UpdateContext]) {
+    var img: Ptr[Image] = e.userData;
+    img.angle += context.elapsed * PI / 8;
+    img.scale.scale += context.elapsed;
+    while img.scale.scale > 1.5 {
+        --img.scale.scale;
     }
-    var key = struct DrawCommandKey {
-        imageData: img,
-        shader: null,
-        smooth: true,
-        blend: Alpha,
-        clip: None
-    };
-    context.batch.addRect(key,
-        struct Rectangle {
-            point: Point.new(),
-            dimensions: Dimensions.new().setTo(img.width, img.height) as Dimensions,
-        },
-        Matrix.new(),
-        Color.White.withAlpha(1), false
-    );
+    img.alpha += context.elapsed / 1.25;
+    img.alpha = img.alpha % 1;
 }
 
 function main() {
-    var options: KritOptions;
-    options.init();
-    options.setSize(640, 480);
-    options.setFrameRate(60, true);
+    var options = struct KritOptions;
+    options
+        .setTitle("Krit - bunnymark")
+        .setSize(640, 480)
+        .setFrameRate(60, true);
 
     var app: Krit;
     app.init(options);
 
     var scene = Scene.new();
     scene.bgColor = 0x00d4aa;
-    scene.onRender = draw;
     app.engine.pushScene(scene);
+
+    var asset = AssetLoader.loadImage("wabbit.png");
+    var n = 0x4000;
+    var images: Array[Image] = Array.new(n);
+    for i in 0 ... n {
+        images[i] = struct Image {region: ImageRegion.fromImage(asset)};
+        images[i].centerOrigin();
+        images[i].angle = PI * 2 * random();
+        images[i].position.setTo(-128 + (640 + 256) * random(), -128 + (480 + 256) * random());
+        images[i].scale.scale = 0.5 + random();
+        images[i].alpha = random() as Float;
+        images[i].color = Color.fromRgb(random(), random(), random());
+        var entity: Ptr[Entity] = scene.entities.grow();
+        *(entity) = struct Entity;
+        entity.position.translate(64, 64);
+        var box = &images[i] as Box[Graphic];
+        entity.graphic = Some(box);
+        entity.userData = &images[i];
+        entity.onUpdate = rotateImage;
+    }
+
+    // scene.onUpdate = onUpdate;
 
     app.run();
 }

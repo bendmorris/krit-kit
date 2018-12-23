@@ -1,0 +1,91 @@
+struct RenderSystem {
+    public var commands: Vector[DrawCommand];
+
+    public static function new(allocator: Box[Allocator]) {
+        return struct Self {
+            commands: Vector.new(0x400),
+        };
+    }
+
+    public function getDrawCommand(key: Ptr[DrawKey], dims: Ptr[Triangle], flexibleLayer: Bool): Ptr[DrawCommand] {
+        // TODO: fallthrough logic
+        // FIXME: kit bug; temp variable evaluation order in short circuited expressions
+        if this.commands.length > 0 {
+            var last = &this.commands.unsafeLast;
+            if last.matches(key) && !last.isFull() {
+                return last;
+            }
+        }
+        var next = this.commands.grow();
+        next.init(key);
+        return next;
+    }
+
+    public function addTriangle(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
+        if color.getAlpha() > 0 {
+            var command = this.getDrawCommand(key, t, flexibleLayer);
+            command.addTriangle(t, uv, color);
+        }
+    }
+
+    public function addRect(key: DrawKey, rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
+        var uvx1: RenderFloat;
+        var uvy1: RenderFloat;
+        var uvx2: RenderFloat;
+        var uvy2: RenderFloat;
+        var imageData = key.image;
+        if imageData == null {
+            uvx1 = uvy1 = 0;
+            uvx2 = rect.width;
+            uvy2 = rect.height;
+        } else {
+            var img = *imageData;
+            uvx1 = rect.x / img.width;
+            uvy1 = rect.y / img.height;
+            uvx2 = (rect.x + rect.width) / img.width;
+            uvy2 = (rect.y + rect.height) / img.height;
+        }
+
+        // matrix transformations
+        var xa = rect.width * matrix.a + matrix.tx;
+        var yb = rect.width * matrix.b + matrix.ty;
+        var xc = rect.height * matrix.c + matrix.tx;
+        var yd = rect.height * matrix.d + matrix.ty;
+
+        var command = this.getDrawCommand(key, struct Triangle {
+            p1: struct Point {x: matrix.tx, y: matrix.ty},
+            p2: struct Point {x: xa, y: yb},
+            p3: struct Point {x: xc, y: yd},
+        }, flexibleLayer);
+        command.addTriangle(
+            struct Triangle {
+                p1: struct Point {x: matrix.tx, y: matrix.ty},
+                p2: struct Point {x: xa, y: yb},
+                p3: struct Point {x: xc, y: yd},
+            },
+            struct Triangle {
+                p1: struct Point {x: uvx1, y: uvy1},
+                p2: struct Point {x: uvx2, y: uvy1},
+                p3: struct Point {x: uvx1, y: uvy2},
+            },
+            color
+        );
+        command.addTriangle(
+            struct Triangle {
+                p1: struct Point {x: xc, y: yd},
+                p2: struct Point {x: xa, y: yb},
+                p3: struct Point {x: xa + rect.height * matrix.c, y: yb + rect.height * matrix.d},
+            },
+            struct Triangle {
+                p1: struct Point {x: uvx1, y: uvy2},
+                p2: struct Point {x: uvx2, y: uvy1},
+                p3: struct Point {x: uvx2, y: uvy2},
+            },
+            color
+        );
+    }
+
+    public function clear() {
+        this.commands.clear();
+    }
+}

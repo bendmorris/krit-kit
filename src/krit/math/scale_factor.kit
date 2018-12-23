@@ -1,23 +1,20 @@
 struct ScaleFactor {
-    public var scale: Double = 1;
-    public var scaleX: Double = 1;
-    public var scaleY: Double = 1;
-
-    public static function new() {
-        return struct ScaleFactor;
-    }
+    public var scale: Float = 1;
+    public var scaleX: Float = 1;
+    public var scaleY: Float = 1;
 
     rules {
-        (this.fullScaleX) => this.scale * this.scaleX;
-        (this.fullScaleY) => this.scale * this.scaleY;
+        ($this.fullScaleX) => $this.scale * $this.scaleX;
+        ($this.fullScaleY) => $this.scale * $this.scaleY;
 
-        (this = (s: Double)) => this.setTo(s, 1, 1);
-        (this as Double) => this.scale;
+        ($this = (s: Float)) => $this.setTo(s, 1, 1);
+        ($this as Float) => $this.scale;
     }
 
-    function setTo(s: Double, sx: Double, sy: Double) {
-        this.scale = s;
+    function setTo(sx: Float, sy: Float) {
+        this.scale = 1;
         this.scaleX = sx;
         this.scaleY = sy;
+        return &this;
     }
 }

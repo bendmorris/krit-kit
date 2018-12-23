@@ -1,7 +1,7 @@
 struct Backdrop {
-    public var position: Point = Point.new();
-    public var dimensions: Dimensions[Int] = Dimensions[Int].new();
-    public var scale: ScaleFactor = ScaleFactor.new(1, 1);
+    public var position: Point = struct Point;
+    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
+    public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var active: Bool = false;
@@ -9,7 +9,7 @@ struct Backdrop {
     var repeatX: Bool;
     var repeatY: Bool;
 
-    public static function new(source: ImageType, repeatX: Bool = true, repeatY: Bool = true) {
+    public static function new(source: ImageRegion, repeatX: Bool = true, repeatY: Bool = true) {
         return struct Backdrop {
             repeatX, repeatY
         };
@@ -17,6 +17,5 @@ struct Backdrop {
 }
 
 implement Graphic for Backdrop {
-    public function render(point: Point, camera: Ptr[Camera]): Void {}
-    public function update(): Void {}
+    public function render(context: Ptr[RenderContext]): Void {}
 }

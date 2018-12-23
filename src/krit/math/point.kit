@@ -1,20 +1,16 @@
 import kit.math;
 
-struct Point[T: Numeric = Double] {
+struct Point[T: Numeric = Float] {
     public var x: T = 0;
     public var y: T = 0;
 
     rules {
         ($this.length) => sqrt(this.x * this.x + this.y * this.y);
-        ($this * (i: T)) => this.scale(i);
-        ($this / (i: T)) => this.scale(1 / i);
+        ($this * ($i: T)) => $this.scale($i);
+        ($this / ($i: T)) => $this.scale(1 / $i);
 
-        ($this + (other: Self)) => Point.new($this.x + other.x, $this.y + other.y);
-        ($this - (other: Self)) => Point.new($this.x - other.x, $this.y - other.y);
-    }
-
-    public static function new() {
-        return struct Self {x: 0, y: 0};
+        ($this + $other) => struct Point {x: $this.x + $other.x, y: $this.y + $other.y};
+        ($this - $other) => struct Point {x: $this.x - $other.x, y: $this.y - $other.y};
     }
 
     public function setTo(x: T, y: T): Self {
@@ -38,6 +34,12 @@ struct Point[T: Numeric = Double] {
     public function scale(s: T): Self {
         this.x *= s;
         this.y *= s;
+        return this;
+    }
+
+    public function translate(x: T, y: T): Self {
+        this.x += x;
+        this.y += y;
         return this;
     }
 
@@ -80,6 +82,6 @@ struct Point[T: Numeric = Double] {
     }
 
     public function clone(): Self {
-        return Self.new(this.x, this.y);
+        return struct Self {x: this.x, y: this.y};
     }
 }

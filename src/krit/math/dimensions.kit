@@ -1,10 +1,6 @@
-abstract Dimensions[T: Numeric = Double]: Point[T] {
+abstract Dimensions[T: Numeric = Float]: Point[T] {
     rules {
         ($this.width) => $this.x;
         ($this.height) => $this.y;
-    }
-
-    public static function new(): Self {
-        return struct Self {x: 1, y: 1};
     }
 }

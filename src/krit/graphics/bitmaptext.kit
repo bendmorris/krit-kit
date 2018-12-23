@@ -1,14 +1,14 @@
 struct BitmapText {
-    public var position: Point = Point.new();
-    public var dimensions: Dimensions[Int] = Dimensions[Int].new();
-    public var scale: ScaleFactor = ScaleFactor.new();
+    public var position: Point = struct Point;
+    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
+    public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var active: Bool = true;
     public var visible: Bool = true;
     public var text: String;
 
-    public static function new(source: ImageType, text: String, options: BitmapTextOptions): Self {
+    public static function new(source: ImageRegion, text: String, options: BitmapTextOptions): Self {
         return struct BitmapText {
             text,
         };
@@ -21,6 +21,5 @@ struct BitmapTextOptions {
 }
 
 implement Graphic for BitmapText {
-    public function render(point: Point, camera: Ptr[Camera]): Void {}
-    public function update(): Void {}
+    public function render(context: Ptr[RenderContext]): Void {}
 }

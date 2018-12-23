@@ -1,16 +1,12 @@
 struct Matrix {
-    public var a: Double = 1;
-    public var b: Double = 0;
-    public var c: Double = 0;
-    public var d: Double = 1;
-    public var tx: Double = 0;
-    public var ty: Double = 0;
+    public var a: Float = 1;
+    public var b: Float = 0;
+    public var c: Float = 0;
+    public var d: Float = 1;
+    public var tx: Float = 0;
+    public var ty: Float = 0;
 
-    public static function new() {
-        return struct Matrix;
-    }
-
-    public function setTo(a: Double, b: Double, c: Double, d: Double, tx: Double, ty: Double): Self {
+    public function setTo(a: Float, b: Float, c: Float, d: Float, tx: Float, ty: Float): Self {
         this.a = a;
         this.b = b;
         this.c = c;
@@ -18,5 +14,50 @@ struct Matrix {
         this.tx = tx;
         this.ty = ty;
         return this;
+    }
+
+    public function copy(): Self {
+        return struct Matrix {
+            a: this.a,
+            b: this.b,
+            c: this.c,
+            d: this.d,
+            tx: this.tx,
+            ty: this.ty,
+        };
+    }
+
+    public function rotate(rads: Float): Ptr[Self] {
+        var rcos = cos(rads);
+        var rsin = sin(rads);
+        var a0 = this.a * rcos - this.b * rsin;
+        this.b = this.a * rsin + this.b * rcos;
+        this.a = a0;
+
+        var c0 = this.c * rcos - this.d * rsin;
+        this.d = this.c * rsin + this.d * rcos;
+        this.c = c0;
+
+        var t0 = this.tx * rcos - this.ty * rsin;
+        this.ty = this.tx * rsin + this.ty * rcos;
+        this.tx = t0;
+
+        return &this;
+    }
+
+    public function scale(sx: Float, sy: Float): Ptr[Self] {
+        this.a *= sx;
+        this.b *= sy;
+        this.c *= sx;
+        this.d *= sy;
+        this.tx *= sx;
+        this.ty *= sy;
+        return &this;
+    }
+
+    public function translate(tx: Float, ty: Float): Ptr[Self] {
+        this.tx += tx;
+        this.ty += ty;
+        return &this;
     }
 }

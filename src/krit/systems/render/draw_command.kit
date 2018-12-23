@@ -1,0 +1,89 @@
+typedef RenderFloat = Float;
+
+struct DrawKey {
+    public var shader: Ptr[Shader] = null;
+    public var image: Ptr[ImageData] = null;
+    public var smooth: Bool = true;
+    public var blend: BlendMode = Alpha;
+    public var clip: Option[Rectangle] = None;
+
+    public function eq(other: DrawKey): Bool {
+        if this.shader == other.shader &&
+            this.image == other.image &&
+            this.smooth == other.smooth &&
+            this.blend == other.blend {
+            match this.clip {
+                Some(x) => match other.clip {
+                    Some(y) => return x.eq(y);
+                }
+                None => return other.clip.isNone();
+            }
+        }
+        return false;
+    }
+}
+
+struct TriangleData {
+    public var t: Triangle = struct Triangle;
+    public var uv: Triangle = struct Triangle;
+    public var color: ColorWithAlpha = Color.White.withAlpha(1);
+
+    /**
+     * Returns two points representing the top left and bottom right of the
+     * AABB containing this triangle.
+     */
+    public function bounds(): (Point, Point) {
+        return (
+            struct Point {x: Self.minOf3(this.t.p1.x, this.t.p2.x, this.t.p3.x), y: Self.minOf3(this.t.p1.y, this.t.p2.y, this.t.p3.y)},
+            struct Point {x: Self.maxOf3(this.t.p1.x, this.t.p2.x, this.t.p3.x), y: Self.maxOf3(this.t.p1.y, this.t.p2.y, this.t.p3.y)}
+        );
+    }
+
+    static function minOf3(a: RenderFloat, b: RenderFloat, c: RenderFloat): RenderFloat {
+        return if a > b then (if b > c then c else b) else (if a > c then c else a);
+    }
+
+    static function maxOf3(a: RenderFloat, b: RenderFloat, c: RenderFloat): RenderFloat {
+        return if a < b then (if b < c then c else b) else (if a < c then c else a);
+    }
+}
+
+struct DrawCommand {
+    public var key: DrawKey;
+    public var triangles: CArray[TriangleData, 0x1000];
+    public var length: Int = 0;
+
+    public function matches(key: DrawKey): Bool {
+        return this.key.eq(key);
+    }
+
+    public function init(key: DrawKey) {
+        this.reset();
+        this.key = key;
+    }
+
+    public function reset() {
+        this.length = 0;
+    }
+
+    public function isFull(): Bool {
+        return this.length >= this.triangles.length;
+    }
+
+    public function addTriangle(t: Triangle, uv: Triangle, color: ColorWithAlpha) {
+        var triangle = &this.triangles[this.length++];
+        triangle.t = t;
+        triangle.uv = uv;
+        triangle.color = color;
+    }
+
+    rules {
+        ($this.shader) => $this.key.shader;
+        ($this.image) => $this.key.image;
+        ($this.smooth) => $this.key.smooth;
+        ($this.blend) => $this.key.blend;
+        ($this.clip) => $this.key.clip;
+
+        (for $ident in $this {$e}) => for $ident in (struct Slice {length: $this.length, data: $this.triangles}) { {$e} }
+    }
+}

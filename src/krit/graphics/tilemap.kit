@@ -1,19 +1,18 @@
 struct TileMap {
-    public var position: Point = Point.new();
-    public var dimensions: Dimensions[Int] = Dimensions[Int].new();
-    public var tileDimensions: Dimensions[Int] = Dimensions[Int].new();
-    public var scale: ScaleFactor = ScaleFactor.new();
+    public var position: Point = struct Point;
+    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
+    public var tileDimensions: Dimensions[Int] = struct Dimensions[Int];
+    public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var active: Bool = false;
     public var visible: Bool = true;
 
-    public static function new(source: ImageType) {
+    public static function new(source: ImageRegion) {
         return struct TileMap;
     }
 }
 
 implement Graphic for TileMap {
-    public function render(point: Point, camera: Ptr[Camera]): Void {}
-    public function update(): Void {}
+    public function render(context: Ptr[RenderContext]): Void {}
 }

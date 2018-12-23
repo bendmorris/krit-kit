@@ -1,30 +1,40 @@
 struct Image {
-    public var position: Point = Point.new();
-    public var dimensions: Dimensions[Int] = Dimensions[Int].new();
-    public var scale: ScaleFactor = ScaleFactor.new();
+    public var position: Point = struct Point;
+    public var origin: Point = struct Point;
+    public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var visible: Bool = true;
     public var blendMode: BlendMode = Alpha;
+    public var angle: Float = 0;
+    public var smooth: Bool = true;
 
-    var imageData: Ptr[ImageData];
-    var imageRegion: Rectangle[Uint];
+    var region: ImageRegion;
 
-    public static function new(source: ImageType) {
-        return struct Image {
-            imageData: source.data,
-            imageRegion: source.region,
-        };
+    public function centerOrigin() {
+        this.origin.setTo(this.width / 2_f32, this.height / 2_f32);
     }
 
-    public function render() {
-        if !this.visible {
-            return;
-        }
+    rules {
+        ($this.width) => $this.region.rect.width;
+        ($this.height) => $this.region.rect.height;
     }
 }
 
 implement Graphic for Image {
-    public function render(point: Point, camera: Ptr[Camera]): Void {}
-    public function update(): Void {}
+    public function render(context: Ptr[RenderContext]): Void {
+        var position = context.transform(this.position + context.offset);
+        var matrix = struct Matrix;
+        matrix
+            .translate(-this.origin.x, -this.origin.y)
+            .rotate(this.angle)
+            .scale(this.scale.fullScaleX, this.scale.fullScaleY)
+            .translate(position.x, position.y);
+        var key = struct DrawKey {
+            image: this.region.image,
+            smooth: this.smooth,
+            blend: this.blendMode
+        };
+        context.renderSystem.addRect(key, this.region.rect, matrix, this.color.withAlpha(this.alpha), false);
+    }
 }

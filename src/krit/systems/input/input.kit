@@ -1,0 +1,13 @@
+struct InputSystem {
+    public var contexts: Vector[InputContext];
+}
+
+enum Action {
+    Pressed;
+    Released;
+    Level;
+}
+
+struct InputContext {
+    public var mappings: Signal1[CString, Action];
+}

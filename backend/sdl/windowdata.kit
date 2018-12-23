@@ -18,6 +18,8 @@ struct WindowData {
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
         // SDL_Image
         IMG_Init(${IMG_INIT_PNG: Int});
@@ -42,6 +44,7 @@ struct WindowData {
         SDL_GL_SetSwapInterval(1);
 
         glEnable(GL_BLEND);
+        glEnable(GL_MULTISAMPLE);
 
         var w = struct Self {window, glContext, surface};
         w.getSize(parent.dimensions.width, parent.dimensions.height);

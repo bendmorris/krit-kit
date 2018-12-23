@@ -18,21 +18,25 @@ struct App {
     public function run() {
         this.running = true;
         var frameStart = 0;
-        var frameDelta: Double = 1 / this.engine.fps;
-        var elapsed: Double = 0;
-        var context = struct RenderContext {
+        var frameDelta: Double = 1_f64 / this.engine.fps;
+        var update = struct UpdateContext {
+            engine: this.engine,
+            window: this.window,
+        };
+        var render = struct RenderContext {
             window: this.window,
             renderer: this.renderer,
-            batch: this.renderer.batch,
+            renderSystem: this.renderer.renderSystem,
         };
         while this.running {
             frameStart = time();
             this.handleEvents();
-            this.engine.update(elapsed);
-            this.engine.render(context);
-            while elapsed < frameDelta {
-                elapsed = time() - frameStart;
-            }
+            this.engine.update(update);
+            this.engine.render(render);
+            do {
+                update.elapsed = time() - frameStart;
+            } while update.elapsed < frameDelta;
+            printf("%.4f FPS\n", 1_f64 / update.elapsed);
         }
     }
 

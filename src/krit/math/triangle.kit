@@ -1,9 +1,5 @@
-struct Triangle[N: Numeric = Double] {
-    public var p1: Point = Point.new();
-    public var p2: Point = Point.new();
-    public var p3: Point = Point.new();
-
-    public static function new() {
-        return struct Triangle;
-    }
+struct Triangle[N: Numeric = Float] {
+    public var p1: Point = struct Point;
+    public var p2: Point = struct Point;
+    public var p3: Point = struct Point;
 }

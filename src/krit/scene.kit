@@ -1,68 +1,75 @@
 struct Scene {
+    static var toAdd: Vector[(Ptr[Scene], Entity)] = Vector.new(256);
+    static var toRemove: Vector[(Ptr[Scene], &Entity)] = Vector.new(256);
+
     public var bgColor: Color = Color.Black;
-    public var bgAlpha: Double = 1;
-    public var camera: Camera;
+    public var bgAlpha: Float = 1;
+    public var camera: Camera = struct Camera;
     public var shader: Ptr[SceneShader] = null;
 
-    public var onUpdate: TimeSignal = null;
-    public var postUpdate: Signal = null;
-    public var onRender: Signal1[RenderContext] = null;
+    public var onUpdate: Signal1[Ptr[UpdateContext]] = null;
+    public var postUpdate: Signal1[Ptr[UpdateContext]] = null;
+    public var onRender: Signal1[Ptr[RenderContext]] = null;
+    public var postRender: Signal1[Ptr[RenderContext]] = null;
 
-    var toUpdate: Vector[Entity];
-    var toAdd: Vector[Entity];
-    var toRemove: Vector[Entity];
+    public var entities: Vector[Entity] = Vector.new(0x10000);
 
-    var layerList: Vector[Int];
-    var layers: Map[Int, Vector[Entity]];
+    var layerList: Vector[Int] = Vector.new(16);
+    var layers: Map[Int, Vector[Ptr[Entity]]] = Map.new(16);
+
+    var allocator: Box[Allocator];
 
     public static function new(allocator: Box[Allocator]): Self using implicit allocator {
         return struct Scene {
-            camera: Camera.new(),
-            toUpdate: Vector.new(16),
-            toAdd: Vector.new(16),
-            toRemove: Vector.new(16),
-            layerList: Vector.new(16),
-            layers: Map.new(16),
+            allocator,
         };
     }
 
-    public function update(elapsed: Double) {
-        this.onUpdate.invoke(elapsed);
-        this.camera.update();
-        for e in this.toUpdate {
+    public function destroy() using implicit this.allocator {
+        this.entities.free();
+        this.layerList.free();
+        // TODO: free vectors in layers
+        this.layers.free();
+    }
+
+    public function update(context: Ptr[UpdateContext]) using implicit context {
+        this.onUpdate.invoke();
+        for e in this.entities {
             if e.active {
-                e.update(elapsed);
+                e.update();
             }
         }
         this.postUpdate.invoke();
     }
 
-    public function render(context: RenderContext) {
-        if this.bgAlpha > 0 {
-            var key = struct DrawCommandKey {
-                imageData: null,
-                shader: null,
-                smooth: true,
-                blend: Alpha,
-                clip: None
-            };
-            context.batch.addRect(key,
-                struct Rectangle {
-                    point: Point.new().setTo(0, 0),
-                    dimensions: Dimensions.new().setTo(context.window.width, context.window.height) as Dimensions,
-                },
-                Matrix.new(),
-                this.bgColor.withAlpha(this.bgAlpha), false
-            );
-        }
-        this.onRender.invoke(context);
+    public function add(entity: Entity) {
+        Self.toAdd.push((&this, entity));
     }
 
-    public function destroy() {
-        this.toUpdate.free();
-        this.toAdd.free();
-        this.toRemove.free();
-        this.layerList.free();
-        this.layers.free();
+    public function remove(entity: Entity) {
+        Self.toRemove.push((&this, &entity));
+    }
+
+    public function render(context: Ptr[RenderContext]) {
+        var childContext = context.copy();
+        childContext.camera = this.camera;
+        using implicit childContext {
+            if this.bgAlpha > 0 {
+                var key = struct DrawKey;
+                context.renderSystem.addRect(key,
+                    struct Rectangle[Int] {
+                        point: struct Point[Int],
+                        dimensions: (struct Dimensions[Int]).setTo(context.window.width, context.window.height) as Dimensions[Int],
+                    },
+                    struct Matrix,
+                    this.bgColor.withAlpha(this.bgAlpha), false
+                );
+            }
+            this.onRender.invoke();
+            for entity in this.entities {
+                entity.render();
+            }
+            this.postRender.invoke();
+        }
     }
 }

@@ -15,27 +15,27 @@ struct Engine {
     public var onUpdate: Signal = null;
     public var postUpdate: Signal = null;
 
-    public var onRender: Signal1[RenderContext] = null;
-    public var postRender: Signal = null;
+    public var onRender: Signal1[Ptr[RenderContext]] = null;
+    public var postRender: Signal1[Ptr[RenderContext]] = null;
 
     var scenes: Vector[Ptr[Scene]];
 
-    public function update(elapsed: Double) {
+    public function update(context: Ptr[UpdateContext]) {
         if this.paused {
             return;
         }
         for scene in this.scenes {
-            scene.update(elapsed);
+            scene.update(context);
         }
     }
 
-    public function render(context: RenderContext) using implicit context {
+    public function render(context: Ptr[RenderContext]) using implicit context {
         var renderer = context.renderer;
-        this.onRender.invoke(context);
+        this.onRender.invoke();
         renderer.startFrame();
         for scene in this.scenes {
             renderer.startScene(scene);
-            scene.render(context);
+            scene.render();
             renderer.flushScene(scene);
         }
         renderer.flushFrame();
@@ -51,6 +51,6 @@ struct Engine {
     }
 
     rules {
-        ($this.scene) => $this.scenes.last;
+        ($this.scene) => $this.scenes.unsafeLast;
     }
 }
