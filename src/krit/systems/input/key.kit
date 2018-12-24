@@ -1,10 +1,10 @@
 // FIXME: make this an enum once enum underlying types are implemented
 // FIXME: SDL-specific key constants
 #[promote] abstract Key: Uint8 {
-    public static const Left: Key = ${SDLK_LEFT: Uint};
-    public static const Up: Key = ${SDLK_UP: Uint};
-    public static const Right: Key = ${SDLK_RIGHT: Uint};
-    public static const Down: Key = ${SDLK_DOWN: Uint};
+    public static const Right: Key = 79;
+    public static const Left: Key = 80;
+    public static const Down: Key = 81;
+    public static const Up: Key = 82;
 
     public static const Enter: Key = 13;
     public static const Command: Key = 15;
@@ -25,32 +25,32 @@
     public static const RightSquareBracket: Key = 221;
     public static const Tilde: Key = 192;
 
-    public static const A: Key = 65;
-    public static const B: Key = 66;
-    public static const C: Key = 67;
-    public static const D: Key = 68;
-    public static const E: Key = 69;
-    public static const F: Key = 70;
-    public static const G: Key = 71;
-    public static const H: Key = 72;
-    public static const I: Key = 73;
-    public static const J: Key = 74;
-    public static const K: Key = 75;
-    public static const L: Key = 76;
-    public static const M: Key = 77;
-    public static const N: Key = 78;
-    public static const O: Key = 79;
-    public static const P: Key = 80;
-    public static const Q: Key = 81;
-    public static const R: Key = 82;
-    public static const S: Key = 83;
-    public static const T: Key = 84;
-    public static const U: Key = 85;
-    public static const V: Key = 86;
-    public static const W: Key = 87;
-    public static const X: Key = 88;
-    public static const Y: Key = 89;
-    public static const Z: Key = 90;
+    public static const A: Key = 4;
+    public static const B: Key = 5;
+    public static const C: Key = 6;
+    public static const D: Key = 7;
+    public static const E: Key = 8;
+    public static const F: Key = 9;
+    public static const G: Key = 10;
+    public static const H: Key = 11;
+    public static const I: Key = 12;
+    public static const J: Key = 13;
+    public static const K: Key = 14;
+    public static const L: Key = 15;
+    public static const M: Key = 16;
+    public static const N: Key = 17;
+    public static const O: Key = 18;
+    public static const P: Key = 19;
+    public static const Q: Key = 20;
+    public static const R: Key = 21;
+    public static const S: Key = 22;
+    public static const T: Key = 23;
+    public static const U: Key = 24;
+    public static const V: Key = 25;
+    public static const W: Key = 26;
+    public static const X: Key = 27;
+    public static const Y: Key = 28;
+    public static const Z: Key = 29;
 
     public static const F1: Key = 112;
     public static const F2: Key = 113;
@@ -99,9 +99,7 @@
 
 struct KeyInputContext {
     public var keyMappings: CArray[CString, 256] = empty;
-    var pressed: CArray[Bool, 256];
     var active: CArray[Bool, 256];
-    var released: CArray[Bool, 256];
 
     public function define(keyCode: Uint8, action: Action) {
         this.keyMappings[keyCode] = action;
@@ -112,16 +110,14 @@ struct KeyInputContext {
     }
 
     public function registerDown(keyCode: Uint8) {
-        if this.keyMappings[keyCode] != null && !this.active[keyCode] {
-            this.pressed[keyCode] = true;
+        if this.keyMappings[keyCode] != null {
             this.active[keyCode] = true;
         }
     }
 
     public function registerUp(keyCode: Uint8) {
-        if this.keyMappings[keyCode] != null && this.active[keyCode] {
+        if this.keyMappings[keyCode] != null {
             this.active[keyCode] = false;
-            this.released[keyCode] = true;
         }
     }
 
@@ -129,16 +125,8 @@ struct KeyInputContext {
         for i in 0 ... 256 {
             if this.keyMappings[i] != null {
                 var action = this.keyMappings[i];
-                if this.pressed[i] {
-                    parent.start.push((action, union LevelData {active: true}));
-                    this.pressed[i] = false;
-                }
-                if this.active[i] {
-                    parent.active.push((action, union LevelData {active: true}));
-                }
-                if this.released[i] {
-                    parent.finish.push((action, union LevelData {active: false}));
-                    this.released[i] = false;
+                if this.active[i] && !parent.active.exists(action) {
+                    parent.active.put(action, union LevelData {active: true});
                 }
             }
         }

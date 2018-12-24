@@ -49,21 +49,14 @@ struct MouseInputContext {
         for i in [Mouse.MouseLeftButton, Mouse.MouseMiddleButton, Mouse.MouseRightButton] {
             if this.mappings[i] != null {
                 var action = this.mappings[i];
-                if this.pressed[i] {
-                    parent.start.push((action, union LevelData {active: true}));
-                    this.pressed[i] = false;
-                }
-                if this.active[i] {
-                    parent.active.push((action, union LevelData {active: true}));
-                }
-                if this.released[i] {
-                    parent.finish.push((action, union LevelData {active: false}));
-                    this.released[i] = false;
+                if this.active[i] && !parent.active.exists(action) {
+                    parent.active.put(action, union LevelData {active: true});
                 }
             }
         }
+
         if this.mappings[Mouse.MousePosition] != null {//&& this.mouseOver {
-            parent.active.push((this.mappings[Mouse.MousePosition], union LevelData {position: this.mousePos}));
+            parent.active.put(this.mappings[Mouse.MousePosition], union LevelData {position: this.mousePos});
         }
     }
 }

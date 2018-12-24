@@ -2,6 +2,9 @@ import krit;
 import krit.**;
 import krit.backend.**;
 
+var bunnies: Int = 0;
+var asset: Ptr[ImageData] = null;
+
 function rotateImage(e: Ptr[Entity], context: Ptr[UpdateContext]) {
     var img: Ptr[Image] = e.userData;
     img.angle += context.elapsed * PI / 8;
@@ -22,6 +25,44 @@ function scroll(update: &UpdateContext, x: Int, y: Int) {
     update.scene.camera.position.y += update.elapsed * 64 * y;
 }
 
+function mousePos(action: &ActionContext, update: &UpdateContext) {
+    printf("%i,%i\n", action.level.position.x, action.level.position.y);
+}
+
+function addBunnies(action: &ActionContext, update: &UpdateContext) {
+    spawnBunnies(update.scene, 250);
+}
+
+function spawnBunnies(scene: Ptr[Scene], n: Int) {
+    bunnies += n;
+    printf("bunnies: %i\n", bunnies);
+    if asset == null {
+        asset = AssetLoader.loadImage("wabbit.png");
+    }
+    var entityPool: PoolAllocator[Entity] = PoolAllocator[Entity].new(n);
+    var imagePool: PoolAllocator[Image] = PoolAllocator[Image].new(n);
+    for i in 0 ... n {
+        var image: Ptr[Image] = imagePool.alloc(1).unwrap();
+        (*image) = struct Image {region: ImageRegion.fromImage(asset)};
+        image.centerOrigin();
+        image.angle = PI * 2 * random();
+        image.position.setTo(-128 + (640 + 256) * random(), -128 + (480 + 256) * random());
+        image.scale.scale = 0.5 + random();
+        image.alpha = random() as Float;
+        image.color = Color.fromRgb(random(), random(), random());
+
+        var entity: Ptr[Entity] = entityPool.alloc(1).unwrap();
+        (*entity) = struct Entity;
+        entity.position.translate(64, 64);
+        var box = image as Box[Graphic];
+        entity.graphic = Some(box);
+        entity.userData = image;
+        entity.onUpdate = rotateImage;
+
+        scene.entities.push(entity);
+    }
+}
+
 function main() {
     var options = struct KritOptions;
     options
@@ -36,35 +77,25 @@ function main() {
     scene.bgColor = 0x00d4aa;
     app.engine.pushScene(scene);
 
-    var asset = AssetLoader.loadImage("wabbit.png");
-    var n = 0x4000;
-    var images: Array[Image] = Array.new(n);
-    for i in 0 ... n {
-        images[i] = struct Image {region: ImageRegion.fromImage(asset)};
-        images[i].centerOrigin();
-        images[i].angle = PI * 2 * random();
-        images[i].position.setTo(-128 + (640 + 256) * random(), -128 + (480 + 256) * random());
-        images[i].scale.scale = 0.5 + random();
-        images[i].alpha = random() as Float;
-        images[i].color = Color.fromRgb(random(), random(), random());
-        var entity: Ptr[Entity] = scene.entities.grow();
-        *(entity) = struct Entity;
-        entity.position.translate(64, 64);
-        var box = &images[i] as Box[Graphic];
-        entity.graphic = Some(box);
-        entity.userData = &images[i];
-        entity.onUpdate = rotateImage;
-    }
+    var n = 250;
+    spawnBunnies(scene, n);
 
     scene.input.key.define(Key.Left, "scroll_left");
     scene.input.key.define(Key.Right, "scroll_right");
     scene.input.key.define(Key.Up, "scroll_up");
     scene.input.key.define(Key.Down, "scroll_down");
+    scene.input.key.define(Key.A, "scroll_left");
+    scene.input.key.define(Key.D, "scroll_right");
+    scene.input.key.define(Key.W, "scroll_up");
+    scene.input.key.define(Key.S, "scroll_down");
 
-    scene.input.onActive("scroll_left", scrollLeft);
-    scene.input.onActive("scroll_right", scrollRight);
-    scene.input.onActive("scroll_up", scrollUp);
-    scene.input.onActive("scroll_down", scrollDown);
+    scene.input.mouse.define(Mouse.MouseLeftButton, "click");
+
+    scene.input.on("scroll_left", scrollLeft);
+    scene.input.on("scroll_right", scrollRight);
+    scene.input.on("scroll_up", scrollUp);
+    scene.input.on("scroll_down", scrollDown);
+    scene.input.onStart("click", addBunnies);
 
     app.run();
 }

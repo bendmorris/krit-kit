@@ -19,10 +19,10 @@ struct Engine {
     public var postRender: Signal1[Ptr[RenderContext]] = null;
 
     // global context
-    public var input: InputContext;
+    public var input: InputContext = struct InputContext;
     // public var assetCache:
 
-    var scenes: Vector[Ptr[Scene]];
+    var scenes: Vector[Ptr[Scene]] = Vector.new(8);
 
     public function update(context: Ptr[UpdateContext]) {
         if this.paused {
@@ -55,6 +55,10 @@ struct Engine {
 
     public function popScene() {
         this.scenes.pop();
+    }
+
+    public function getActiveScenes(): Slice[Ptr[Scene]] {
+        return struct Slice {length: 1, data: &this.scene};
     }
 
     rules {

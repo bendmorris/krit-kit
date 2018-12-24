@@ -10,20 +10,20 @@ struct InputContext {
     public var mouse: MouseInputContext = struct MouseInputContext;
     public var key: KeyInputContext = struct KeyInputContext;
 
+    public var onUpdate: Signal1[Ptr[UpdateContext]] = null;
+
     var startMappings: Map[Action, Signal2[Ptr[ActionContext], Ptr[UpdateContext]]] = Map.new(0x20);
     var activeMappings: Map[Action, Signal2[Ptr[ActionContext], Ptr[UpdateContext]]] = Map.new(0x20);
     var finishMappings: Map[Action, Signal2[Ptr[ActionContext], Ptr[UpdateContext]]] = Map.new(0x20);
 
-    var start: Vector[(CString, LevelData)] = Vector.new(16);
-    var active: Vector[(CString, LevelData)] = Vector.new(16);
-    var finish: Vector[(CString, LevelData)] = Vector.new(16);
-    var level: Vector[(CString, LevelData)] = Vector.new(16);
+    var actionStates: Map[Action, Bool] = Map.new(0x20);
+    var active: Map[Action, LevelData] = Map.new(0x20);
 
     public function onStart(action: Action, signal: Signal) {
         this.startMappings.put(action, signal);
     }
 
-    public function onActive(action: Action, signal: Signal) {
+    public function on(action: Action, signal: Signal) {
         this.activeMappings.put(action, signal);
     }
 
@@ -32,46 +32,46 @@ struct InputContext {
     }
 
     public function update(context: Ptr[UpdateContext]) {
+        this.onUpdate.invoke(context);
         this.mouse.update(this, context);
         this.key.update(this, context);
 
-        var action;
-        var level;
-        var actionContext;
+        var actionContext = struct ActionContext;
 
-        // call all callbacks
-        for actionData in this.start {
-            (action, level) = actionData;
-            if this.startMappings.exists(action) {
-                actionContext = struct ActionContext {
-                    action,
-                    level,
-                };
-                this.startMappings[action].invoke(actionContext, context);
+        // trigger any ongoing or finished actions
+        for action in this.actionStates {
+            var active = this.active.exists(action);
+            if active {
+                if this.activeMappings.exists(action) {
+                    actionContext.action = action;
+                    actionContext.level = this.active[action];
+                    this.activeMappings[action].invoke(actionContext, context);
+                }
+            } else {
+                if this.finishMappings.exists(action) {
+                    actionContext.action = action;
+                    actionContext.level = union LevelData {active: false};
+                    this.finishMappings[action].invoke(actionContext, context);
+                }
+                this.actionStates.remove(action);
             }
         }
-        for actionData in this.active {
-            (action, level) = actionData;
-            if this.activeMappings.exists(action) {
-                actionContext = struct ActionContext {
-                    action,
-                    level,
-                };
-                this.activeMappings[action].invoke(actionContext, context);
+        // trigger any new actions
+        for action in this.active {
+            if !this.actionStates.exists(action) {
+                this.actionStates.put(action, true);
+                if this.startMappings.exists(action) {
+                    actionContext.action = action;
+                    actionContext.level = this.active[action];
+                    this.startMappings[action].invoke(actionContext, context);
+                }
+                if this.activeMappings.exists(action) {
+                    actionContext.action = action;
+                    actionContext.level = this.active[action];
+                    this.activeMappings[action].invoke(actionContext, context);
+                }
             }
         }
-        for actionData in this.finish {
-            (action, level) = actionData;
-            if this.finishMappings.exists(action) {
-                actionContext = struct ActionContext {
-                    action,
-                    level,
-                };
-                this.finishMappings[action].invoke(actionContext, context);
-            }
-        }
-        this.start.clear();
         this.active.clear();
-        this.finish.clear();
     }
 }
