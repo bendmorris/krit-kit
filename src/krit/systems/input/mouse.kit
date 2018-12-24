@@ -1,4 +1,69 @@
-enum MouseButton {
-    LeftButton;
-    RightButton;
+// FIXME: enum
+abstract Mouse: Uint8 {
+    public static const MousePosition = 0;
+    public static const MouseLeftButton = 1;
+    public static const MouseMiddleButton = 2;
+    public static const MouseRightButton = 3;
+}
+
+struct MouseInputContext {
+    public var mousePos: Point[Int] = struct Point[Int];
+    public var mouseOver: Bool = false;
+
+    var mappings: CArray[Action, 4] = empty;
+    var pressed: CArray[Bool, 4] = empty;
+    var active: CArray[Bool, 4] = empty;
+    var released: CArray[Bool, 4] = empty;
+
+    public function define(m: Mouse, action: Action) {
+        this.mappings[m] = action;
+    }
+
+    public function undefine(m: Mouse) {
+        this.mappings[m] = null;
+    }
+
+    public function registerDown(m: Mouse) {
+        if this.mappings[m] != null && !this.active[m] {
+            this.pressed[m] = true;
+            this.active[m] = true;
+        }
+    }
+
+    public function registerUp(m: Mouse) {
+        if this.mappings[m] != null && this.active[m] {
+            this.active[m] = false;
+            this.released[m] = true;
+        }
+    }
+
+    public function registerOver(over: Bool) {
+        this.mouseOver = over;
+    }
+
+    public function registerPos(x: Int, y: Int) {
+        this.mousePos.setTo(x, y);
+    }
+
+    public function update(parent: Ptr[InputContext], context: Ptr[UpdateContext]) {
+        for i in [Mouse.MouseLeftButton, Mouse.MouseMiddleButton, Mouse.MouseRightButton] {
+            if this.mappings[i] != null {
+                var action = this.mappings[i];
+                if this.pressed[i] {
+                    parent.start.push((action, union LevelData {active: true}));
+                    this.pressed[i] = false;
+                }
+                if this.active[i] {
+                    parent.active.push((action, union LevelData {active: true}));
+                }
+                if this.released[i] {
+                    parent.finish.push((action, union LevelData {active: false}));
+                    this.released[i] = false;
+                }
+            }
+        }
+        if this.mappings[Mouse.MousePosition] != null {//&& this.mouseOver {
+            parent.active.push((this.mappings[Mouse.MousePosition], union LevelData {position: this.mousePos}));
+        }
+    }
 }

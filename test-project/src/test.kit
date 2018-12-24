@@ -2,10 +2,6 @@ import krit;
 import krit.**;
 import krit.backend.**;
 
-// function onUpdate(context) {
-//     context.engine.scene.camera.position.x -= context.elapsed * 10;
-// }
-
 function rotateImage(e: Ptr[Entity], context: Ptr[UpdateContext]) {
     var img: Ptr[Image] = e.userData;
     img.angle += context.elapsed * PI / 8;
@@ -15,6 +11,15 @@ function rotateImage(e: Ptr[Entity], context: Ptr[UpdateContext]) {
     }
     img.alpha += context.elapsed / 1.25;
     img.alpha = img.alpha % 1;
+}
+
+function scrollUp(action: &ActionContext, update: &UpdateContext) {scroll(update, 0, -1);}
+function scrollDown(action: &ActionContext, update: &UpdateContext) {scroll(update, 0, 1);}
+function scrollLeft(action: &ActionContext, update: &UpdateContext) {scroll(update, -1, 0);}
+function scrollRight(action: &ActionContext, update: &UpdateContext) {scroll(update, 1, 0);}
+function scroll(update: &UpdateContext, x: Int, y: Int) {
+    update.scene.camera.position.x += update.elapsed * 64 * x;
+    update.scene.camera.position.y += update.elapsed * 64 * y;
 }
 
 function main() {
@@ -51,7 +56,15 @@ function main() {
         entity.onUpdate = rotateImage;
     }
 
-    // scene.onUpdate = onUpdate;
+    scene.input.key.define(Key.Left, "scroll_left");
+    scene.input.key.define(Key.Right, "scroll_right");
+    scene.input.key.define(Key.Up, "scroll_up");
+    scene.input.key.define(Key.Down, "scroll_down");
+
+    scene.input.onActive("scroll_left", scrollLeft);
+    scene.input.onActive("scroll_right", scrollRight);
+    scene.input.onActive("scroll_up", scrollUp);
+    scene.input.onActive("scroll_down", scrollDown);
 
     app.run();
 }

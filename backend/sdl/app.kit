@@ -29,14 +29,15 @@ struct App {
             renderSystem: this.renderer.renderSystem,
         };
         while this.running {
+            update.scene = this.engine.scene;
             frameStart = time();
-            this.handleEvents();
+            this.handleEvents(update);
             this.engine.update(update);
             this.engine.render(render);
             do {
                 update.elapsed = time() - frameStart;
             } while update.elapsed < frameDelta;
-            printf("%.4f FPS\n", 1_f64 / update.elapsed);
+            // printf("%.4f FPS\n", 1_f64 / update.elapsed);
         }
     }
 
@@ -44,7 +45,7 @@ struct App {
         this.window.destroy();
     }
 
-    function handleEvents() {
+    function handleEvents(context: Ptr[UpdateContext]) {
         var event: SDL_Event;
         while SDL_PollEvent(event) != 0 {
             if event.type == ${SDL_QUIT: Uint} {
@@ -56,7 +57,34 @@ struct App {
                     var h = event.window.data2;
                     this.window.onResize(w, h);
                 }
+            } else if event.type == ${SDL_KEYDOWN: Uint} {
+                context.engine.input.key.registerDown(event.key.keysym.sym as Uint8);
+                context.scene.input.key.registerDown(event.key.keysym.sym as Uint8);
+            } else if event.type == ${SDL_KEYUP: Uint} {
+                context.engine.input.key.registerUp(event.key.keysym.sym as Uint8);
+                context.scene.input.key.registerUp(event.key.keysym.sym as Uint8);
+            } else if event.type == ${SDL_MOUSEBUTTONDOWN: Uint} {
+                context.engine.input.mouse.registerDown(Self.sdlMouseButton(event.button.button));
+                context.scene.input.mouse.registerDown(Self.sdlMouseButton(event.button.button));
+            } else if event.type == ${SDL_MOUSEBUTTONUP: Uint} {
+                context.engine.input.mouse.registerUp(Self.sdlMouseButton(event.button.button));
+                context.scene.input.mouse.registerUp(Self.sdlMouseButton(event.button.button));
+            } else if event.type == ${SDL_MOUSEMOTION: Uint} {
+                context.engine.input.mouse.registerPos(event.motion.x, event.motion.y);
+                context.scene.input.mouse.registerPos(event.motion.x, event.motion.y);
+            } else if event.type == ${SDL_WINDOWEVENT_ENTER: Uint} {
+                context.engine.input.mouse.registerOver(true);
+            } else if event.type == ${SDL_WINDOWEVENT_LEAVE: Uint} {
+                context.engine.input.mouse.registerOver(false);
             }
+        }
+    }
+
+    static function sdlMouseButton(b: Uint8): Mouse {
+        match b {
+            (SDL_BUTTON_LEFT) => return Mouse.MouseLeftButton;
+            (SDL_BUTTON_MIDDLE) => return Mouse.MouseMiddleButton;
+            (SDL_BUTTON_RIGHT) => return Mouse.MouseRightButton;
         }
     }
 }

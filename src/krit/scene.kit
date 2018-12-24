@@ -14,6 +14,10 @@ struct Scene {
 
     public var entities: Vector[Entity] = Vector.new(0x10000);
 
+    // scene-specific context
+    public var input: InputContext = struct InputContext;
+    // public var assetCache:
+
     var layerList: Vector[Int] = Vector.new(16);
     var layers: Map[Int, Vector[Ptr[Entity]]] = Map.new(16);
 
@@ -33,6 +37,7 @@ struct Scene {
     }
 
     public function update(context: Ptr[UpdateContext]) using implicit context {
+        this.input.update(context);
         this.onUpdate.invoke();
         for e in this.entities {
             if e.active {

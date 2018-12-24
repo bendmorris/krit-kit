@@ -2,4 +2,14 @@ struct UpdateContext {
     public var elapsed: Double = 0;
     public var engine: Ptr[Engine];
     public var window: Ptr[Window];
+    public var scene: Ptr[Scene];
+
+    public function copy(): Self {
+        return struct UpdateContext {
+            elapsed: this.elapsed,
+            engine: this.engine,
+            window: this.window,
+            scene: this.scene,
+        };
+    }
 }

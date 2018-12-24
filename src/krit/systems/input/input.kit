@@ -1,13 +1,77 @@
-struct InputSystem {
-    public var contexts: Vector[InputContext];
-}
-
-enum Action {
-    Pressed;
-    Released;
-    Level;
-}
+// enum ActionCondition {
+//     Pressed;
+//     Down;
+//     Released;
+//     LevelGt(n: Float);
+//     LevelLt(n: Float);
+// }
 
 struct InputContext {
-    public var mappings: Signal1[CString, Action];
+    public var mouse: MouseInputContext = struct MouseInputContext;
+    public var key: KeyInputContext = struct KeyInputContext;
+
+    var startMappings: Map[Action, Signal2[Ptr[ActionContext], Ptr[UpdateContext]]] = Map.new(0x20);
+    var activeMappings: Map[Action, Signal2[Ptr[ActionContext], Ptr[UpdateContext]]] = Map.new(0x20);
+    var finishMappings: Map[Action, Signal2[Ptr[ActionContext], Ptr[UpdateContext]]] = Map.new(0x20);
+
+    var start: Vector[(CString, LevelData)] = Vector.new(16);
+    var active: Vector[(CString, LevelData)] = Vector.new(16);
+    var finish: Vector[(CString, LevelData)] = Vector.new(16);
+    var level: Vector[(CString, LevelData)] = Vector.new(16);
+
+    public function onStart(action: Action, signal: Signal) {
+        this.startMappings.put(action, signal);
+    }
+
+    public function onActive(action: Action, signal: Signal) {
+        this.activeMappings.put(action, signal);
+    }
+
+    public function onFinish(action: Action, signal: Signal) {
+        this.finishMappings.put(action, signal);
+    }
+
+    public function update(context: Ptr[UpdateContext]) {
+        this.mouse.update(this, context);
+        this.key.update(this, context);
+
+        var action;
+        var level;
+        var actionContext;
+
+        // call all callbacks
+        for actionData in this.start {
+            (action, level) = actionData;
+            if this.startMappings.exists(action) {
+                actionContext = struct ActionContext {
+                    action,
+                    level,
+                };
+                this.startMappings[action].invoke(actionContext, context);
+            }
+        }
+        for actionData in this.active {
+            (action, level) = actionData;
+            if this.activeMappings.exists(action) {
+                actionContext = struct ActionContext {
+                    action,
+                    level,
+                };
+                this.activeMappings[action].invoke(actionContext, context);
+            }
+        }
+        for actionData in this.finish {
+            (action, level) = actionData;
+            if this.finishMappings.exists(action) {
+                actionContext = struct ActionContext {
+                    action,
+                    level,
+                };
+                this.finishMappings[action].invoke(actionContext, context);
+            }
+        }
+        this.start.clear();
+        this.active.clear();
+        this.finish.clear();
+    }
 }

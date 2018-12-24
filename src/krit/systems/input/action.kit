@@ -1,0 +1,12 @@
+typedef Action = CString;
+
+union LevelData {
+    public var active: Bool;
+    public var level: Int;
+    public var position: Point[Int];
+}
+
+struct ActionContext {
+    public var action: CString;
+    public var level: LevelData;
+}

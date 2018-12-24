@@ -1,96 +1,146 @@
-enum Key {//: Uint8 {
-    Left; // = 37;
-    Up; // = 38;
-    Right; // = 39;
-    Down; // = 40;
+// FIXME: make this an enum once enum underlying types are implemented
+// FIXME: SDL-specific key constants
+#[promote] abstract Key: Uint8 {
+    public static const Left: Key = ${SDLK_LEFT: Uint};
+    public static const Up: Key = ${SDLK_UP: Uint};
+    public static const Right: Key = ${SDLK_RIGHT: Uint};
+    public static const Down: Key = ${SDLK_DOWN: Uint};
 
-    Enter; // = 13;
-    Command; // = 15;
-    Control; // = 17;
-    Space; // = 32;
-    Shift; // = 16;
-    Backspace; // = 8;
-    CapsLock; // = 20;
-    Delete; // = 46;
-    End; // = 35;
-    Escape; // = 27;
-    Home; // = 36;
-    Insert; // = 45;
-    Tab; // = 9;
-    PageDown; // = 34;
-    PageUp; // = 33;
-    LeftSquareBracket; // = 219;
-    RightSquareBracket; // = 221;
-    Tilde; // = 192;
+    public static const Enter: Key = 13;
+    public static const Command: Key = 15;
+    public static const Control: Key = 17;
+    public static const Space: Key = 32;
+    public static const Shift: Key = 16;
+    public static const Backspace: Key = 8;
+    public static const CapsLock: Key = 20;
+    public static const Delete: Key = 46;
+    public static const End: Key = 35;
+    public static const Escape: Key = 27;
+    public static const Home: Key = 36;
+    public static const Insert: Key = 45;
+    public static const Tab: Key = 9;
+    public static const PageDown: Key = 34;
+    public static const PageUp: Key = 33;
+    public static const LeftSquareBracket: Key = 219;
+    public static const RightSquareBracket: Key = 221;
+    public static const Tilde: Key = 192;
 
-    A; // = 65;
-    B; // = 66;
-    C; // = 67;
-    D; // = 68;
-    E; // = 69;
-    F; // = 70;
-    G; // = 71;
-    H; // = 72;
-    I; // = 73;
-    J; // = 74;
-    K; // = 75;
-    L; // = 76;
-    M; // = 77;
-    N; // = 78;
-    O; // = 79;
-    P; // = 80;
-    Q; // = 81;
-    R; // = 82;
-    S; // = 83;
-    T; // = 84;
-    U; // = 85;
-    V; // = 86;
-    W; // = 87;
-    X; // = 88;
-    Y; // = 89;
-    Z; // = 90;
+    public static const A: Key = 65;
+    public static const B: Key = 66;
+    public static const C: Key = 67;
+    public static const D: Key = 68;
+    public static const E: Key = 69;
+    public static const F: Key = 70;
+    public static const G: Key = 71;
+    public static const H: Key = 72;
+    public static const I: Key = 73;
+    public static const J: Key = 74;
+    public static const K: Key = 75;
+    public static const L: Key = 76;
+    public static const M: Key = 77;
+    public static const N: Key = 78;
+    public static const O: Key = 79;
+    public static const P: Key = 80;
+    public static const Q: Key = 81;
+    public static const R: Key = 82;
+    public static const S: Key = 83;
+    public static const T: Key = 84;
+    public static const U: Key = 85;
+    public static const V: Key = 86;
+    public static const W: Key = 87;
+    public static const X: Key = 88;
+    public static const Y: Key = 89;
+    public static const Z: Key = 90;
 
-    F1; // = 112;
-    F2; // = 113;
-    F3; // = 114;
-    F4; // = 115;
-    F5; // = 116;
-    F6; // = 117;
-    F7; // = 118;
-    F8; // = 119;
-    F9; // = 120;
-    F10; // = 121;
-    F11; // = 122;
-    F12; // = 123;
-    F13; // = 124;
-    F14; // = 125;
-    F15; // = 126;
+    public static const F1: Key = 112;
+    public static const F2: Key = 113;
+    public static const F3: Key = 114;
+    public static const F4: Key = 115;
+    public static const F5: Key = 116;
+    public static const F6: Key = 117;
+    public static const F7: Key = 118;
+    public static const F8: Key = 119;
+    public static const F9: Key = 120;
+    public static const F10: Key = 121;
+    public static const F11: Key = 122;
+    public static const F12: Key = 123;
+    public static const F13: Key = 124;
+    public static const F14: Key = 125;
+    public static const F15: Key = 126;
 
-    Digit0; // = 48;
-    Digit1; // = 49;
-    Digit2; // = 50;
-    Digit3; // = 51;
-    Digit4; // = 52;
-    Digit5; // = 53;
-    Digit6; // = 54;
-    Digit7; // = 55;
-    Digit8; // = 56;
-    Digit9; // = 57;
+    public static const Digit0: Key = 48;
+    public static const Digit1: Key = 49;
+    public static const Digit2: Key = 50;
+    public static const Digit3: Key = 51;
+    public static const Digit4: Key = 52;
+    public static const Digit5: Key = 53;
+    public static const Digit6: Key = 54;
+    public static const Digit7: Key = 55;
+    public static const Digit8: Key = 56;
+    public static const Digit9: Key = 57;
 
-    Numpad0; // = 96;
-    Numpad1; // = 97;
-    Numpad2; // = 98;
-    Numpad3; // = 99;
-    Numpad4; // = 100;
-    Numpad5; // = 101;
-    Numpad6; // = 102;
-    Numpad7; // = 103;
-    Numpad8; // = 104;
-    Numpad9; // = 105;
-    NumpadAdd; // = 107;
-    NumpadDecimal; // = 110;
-    NumpadDivide; // = 111;
-    NumpadEnter; // = 108;
-    NumpadMultiply; // = 106;
-    NumpadSubtract; // = 109;
+    public static const Numpad0: Key = 96;
+    public static const Numpad1: Key = 97;
+    public static const Numpad2: Key = 98;
+    public static const Numpad3: Key = 99;
+    public static const Numpad4: Key = 100;
+    public static const Numpad5: Key = 101;
+    public static const Numpad6: Key = 102;
+    public static const Numpad7: Key = 103;
+    public static const Numpad8: Key = 104;
+    public static const Numpad9: Key = 105;
+    public static const NumpadAdd: Key = 107;
+    public static const NumpadDecimal: Key = 110;
+    public static const NumpadDivide: Key = 111;
+    public static const NumpadEnter: Key = 108;
+    public static const NumpadMultiply: Key = 106;
+    public static const NumpadSubtract: Key = 109;
+}
+
+struct KeyInputContext {
+    public var keyMappings: CArray[CString, 256] = empty;
+    var pressed: CArray[Bool, 256];
+    var active: CArray[Bool, 256];
+    var released: CArray[Bool, 256];
+
+    public function define(keyCode: Uint8, action: Action) {
+        this.keyMappings[keyCode] = action;
+    }
+
+    public function undefine(keyCode: Uint8) {
+        this.keyMappings[keyCode] = null;
+    }
+
+    public function registerDown(keyCode: Uint8) {
+        if this.keyMappings[keyCode] != null && !this.active[keyCode] {
+            this.pressed[keyCode] = true;
+            this.active[keyCode] = true;
+        }
+    }
+
+    public function registerUp(keyCode: Uint8) {
+        if this.keyMappings[keyCode] != null && this.active[keyCode] {
+            this.active[keyCode] = false;
+            this.released[keyCode] = true;
+        }
+    }
+
+    public function update(parent: Ptr[InputContext], context: Ptr[UpdateContext]) {
+        for i in 0 ... 256 {
+            if this.keyMappings[i] != null {
+                var action = this.keyMappings[i];
+                if this.pressed[i] {
+                    parent.start.push((action, union LevelData {active: true}));
+                    this.pressed[i] = false;
+                }
+                if this.active[i] {
+                    parent.active.push((action, union LevelData {active: true}));
+                }
+                if this.released[i] {
+                    parent.finish.push((action, union LevelData {active: false}));
+                    this.released[i] = false;
+                }
+            }
+        }
+    }
 }
