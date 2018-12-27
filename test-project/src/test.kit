@@ -2,6 +2,8 @@ import krit;
 import krit.**;
 import krit.backend.**;
 
+using rules KritUtils;
+
 var bunnies: Int = 0;
 var asset: Ptr[ImageData] = null;
 
@@ -37,7 +39,9 @@ function spawnBunnies(scene: Ptr[Scene], n: Int) {
     bunnies += n;
     printf("bunnies: %i\n", bunnies);
     if asset == null {
-        asset = AssetLoader.loadImage("wabbit.png");
+        var cache = AssetCache.new();
+        var context = AssetContext.new(cache);
+        asset = context.getImage("wabbit.png");
     }
     var entityPool: PoolAllocator[Entity] = PoolAllocator[Entity].new(n);
     var imagePool: PoolAllocator[Image] = PoolAllocator[Image].new(n);
@@ -63,17 +67,31 @@ function spawnBunnies(scene: Ptr[Scene], n: Int) {
     }
 }
 
+function drawLine(c: &RenderContext) {
+    var d = struct DrawContext {context: c, lineThickness: 20, color: 0xff0000, alpha: 0.5};
+    d.line(P(0, 0), P(128, 64));
+    d.line(P(128, 64), P(256, 0));
+    d.rectFilled(R(256, 256, 64, 64));
+    d.setColor(0x0000ff, 0.5);
+    d.rect(R(256, 256, 64, 64));
+    d.circle(P(128, 128), 32, 32);
+    d.circleFilled(P(128, 256), 32, 32);
+    d.arc(P(192, 64), 32, 0, PI*1.5, 32);
+}
+
 function main() {
     var options = struct KritOptions;
     options
         .setTitle("Krit - bunnymark")
-        .setSize(640, 480)
+        .setSize(640, 360)
         .setFrameRate(60, true);
 
     var app: Krit;
     app.init(options);
 
     var scene = Scene.new();
+    scene.camera.scaleMode = DefaultStretchScaleMode;
+    scene.camera.dimensions.setTo(1920, 1080);
     scene.bgColor = 0x00d4aa;
     app.engine.pushScene(scene);
 
@@ -96,6 +114,10 @@ function main() {
     scene.input.on("scroll_up", scrollUp);
     scene.input.on("scroll_down", scrollDown);
     scene.input.onStart("click", addBunnies);
+
+    var font = BitmapFont.load("test-project/assets/fonts/coiny.84.fnt");
+
+    app.engine.postRender = drawLine;
 
     app.run();
 }

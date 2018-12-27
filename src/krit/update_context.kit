@@ -3,6 +3,7 @@ struct UpdateContext {
     public var engine: Ptr[Engine];
     public var window: Ptr[Window];
     public var scene: Ptr[Scene];
+    public var asset: Ptr[AssetContext];
 
     public function copy(): Self {
         return struct UpdateContext {

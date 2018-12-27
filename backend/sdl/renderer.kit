@@ -68,9 +68,8 @@ struct Renderer {
     var width: Int = 0;
     var height: Int = 0;
 
-    public function startFrame(context: RenderContext) {
+    public function startFrame(context: Ptr[RenderContext]) {
         var window = context.window;
-        SDL_GL_MakeCurrent(window.windowData.window, window.windowData.glContext);
         window.windowData.getSize(this.width, this.height);
         Self.ortho(0, this.width, this.height, 0);
         window.windowData.getSize(window.dimensions.width, window.dimensions.height);
@@ -80,23 +79,23 @@ struct Renderer {
         this.triangleCount = 0;
     }
 
-    public function flushFrame(context: RenderContext) {
+    public function flushFrame(context: Ptr[RenderContext]) {
         SDL_GL_SwapWindow(context.window.windowData.window);
         // printf("triangles: %i\n", this.triangleCount);
     }
 
-    public function startScene(context: RenderContext, scene: Ptr[Scene]) {
+    public function startScene(context: Ptr[RenderContext], scene: Ptr[Scene]) {
     }
 
-    public function flushScene(context: RenderContext, scene: Ptr[Scene]) {
+    public function flushScene(context: Ptr[RenderContext], scene: Ptr[Scene]) {
         for command in this.renderSystem.commands {
-            this.drawCommand(context, command);
+            this.drawCall(context, command);
         }
         this.renderSystem.clear();
     }
 
-    function drawCommand(context: RenderContext, drawCommand: Ptr[DrawCommand]) {
-        GL.checkForErrors("drawCommand");
+    function drawCall(context: Ptr[RenderContext], drawCall: Ptr[DrawCall]) {
+        GL.checkForErrors("drawCall");
         var window = context.window;
 
         var x = 0;
@@ -104,11 +103,11 @@ struct Renderer {
         var width = this.width;
         var height = this.height;
 
-        if drawCommand.length > 0 {
-            this.triangleCount += drawCommand.length;
+        if drawCall.length > 0 {
+            this.triangleCount += drawCall.length;
 
-            var clipRect = drawCommand.key.clip;
-            match drawCommand.key.clip {
+            var clipRect = drawCall.key.clip;
+            match drawCall.key.clip {
                 Some(clipRect) => {
                     width -= clipRect.x as Int;
                     height -= clipRect.y as Int;
@@ -118,23 +117,23 @@ struct Renderer {
             }
 
             if width > 0 && height > 0 {
-                var shader = drawCommand.shader;
+                var shader = drawCall.shader;
                 if shader == null {
-                    shader = if drawCommand.image == null then &this.defaultColorShader else &this.defaultTextureShader;
+                    shader = if drawCall.image == null then &this.defaultColorShader else &this.defaultTextureShader;
                 }
                 shader.bind(Self._ortho);
 
-                if drawCommand.image != null {
+                if drawCall.image != null {
                     glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, drawCommand.image.texture);
+                    glBindTexture(GL_TEXTURE_2D, drawCall.image.texture);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, if drawCommand.smooth then GL_LINEAR else GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, if drawCall.smooth then GL_LINEAR else GL_NEAREST);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                     GL.checkForErrors("bind texture");
                 }
 
-                match drawCommand.clip {
+                match drawCall.clip {
                     Some(rect) => {
                         x += fmax(rect.x, 0);
                         y += fmax(rect.y, 0);
@@ -144,7 +143,7 @@ struct Renderer {
                 glEnable(GL_SCISSOR_TEST);
                 glScissor(x as Int, (this.height - y - height) as Int, width, height);
 
-                var dataSize = drawCommand.length * shader.bytesPerVertex() * 3;
+                var dataSize = drawCall.length * shader.bytesPerVertex() * 3;
                 this.renderData.ensureSize(dataSize);
                 glBindBuffer(GL_ARRAY_BUFFER, this.renderBuffer);
                 if this.renderData.ref() as Ptr[Float] != this.bufferPtr {
@@ -152,11 +151,11 @@ struct Renderer {
                     GL.checkForErrors("buffer data");
                     this.bufferPtr = this.renderData.ref() as Ptr[Float];
                 }
-                shader.prepare(drawCommand, this.renderData.ref() as Ptr[Float]);
+                shader.prepare(drawCall, this.renderData.ref() as Ptr[Float]);
 
-                Self.setBlendMode(drawCommand.blend);
+                Self.setBlendMode(drawCall.blend);
 
-                glDrawArrays(GL_TRIANGLES, 0, drawCommand.length * 3);
+                glDrawArrays(GL_TRIANGLES, 0, drawCall.length * 3);
                 GL.checkForErrors("render");
 
                 glDisable(GL_SCISSOR_TEST);

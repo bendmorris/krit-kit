@@ -22,13 +22,14 @@ struct App {
         var update = struct UpdateContext {
             engine: this.engine,
             window: this.window,
+            asset: this.engine.asset,
         };
         var render = struct RenderContext {
             window: this.window,
             renderer: this.renderer,
             renderSystem: this.renderer.renderSystem,
         };
-        var frameCount: Int = 0;
+        // var frameCount: Int = 0;
         while this.running {
             frameStart = time();
             this.handleEvents(update);
@@ -37,9 +38,9 @@ struct App {
             do {
                 update.elapsed = time() - frameStart;
             } while update.elapsed < frameDelta;
-            if ++frameCount % 10 == 0 {
-                printf("%.4f FPS\n", 1_f64 / update.elapsed);
-            }
+            // if ++frameCount % 10 == 0 {
+            //     printf("%.4f FPS\n", 1_f64 / update.elapsed);
+            // }
         }
     }
 

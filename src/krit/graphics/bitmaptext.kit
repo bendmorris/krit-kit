@@ -4,7 +4,6 @@ struct BitmapText {
     public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
-    public var active: Bool = true;
     public var visible: Bool = true;
     public var text: String;
 
@@ -15,9 +14,25 @@ struct BitmapText {
     }
 }
 
+enum AlignType {
+    LeftAlign;
+    CenterAlign;
+    RightAlign;
+}
+
 struct BitmapTextOptions {
-    // TODO
-    var a: Int;
+    public var font: CString;
+    public var size: Int = 16;
+    public var align: AlignType = LeftAlign;
+    public var wordWrap: Bool = false;
+}
+
+struct FormatTagOptions {
+    public var color: Option[Color];
+    public var alpha: Option[Float];
+    public var size: Option[Int];
+    public var scale: Option[Float];
+    public var font: Option[CString];
 }
 
 implement Graphic for BitmapText {

@@ -36,7 +36,7 @@ struct InputContext {
         this.mouse.update(this, context);
         this.key.update(this, context);
 
-        var actionContext = struct ActionContext;
+        var actionContext: ActionContext = empty;
 
         // trigger any ongoing or finished actions
         for action in this.actionStates {

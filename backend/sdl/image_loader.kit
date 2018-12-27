@@ -1,7 +1,9 @@
 import kit.sys.file;
 
-abstract AssetLoader: Void {
-    public static function loadImage(allocator: Box[Allocator], id: CString): Shared[ImageData]
+abstract ImageLoader: Void {
+    public static const TYPE = "img";
+
+    public static function load(allocator: Box[Allocator], id: CString): Shared[Void]
     using implicit allocator {
         // shortcut for now: just load from file
         var surface = IMG_Load(id);
@@ -26,11 +28,13 @@ abstract AssetLoader: Void {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface.w, surface.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface.pixels);
         GL.checkForErrors("asset load");
         SDL_FreeSurface(surface);
-        return img;
+        return img as Shared[Void];
     }
 
-    public static function freeImage(allocator: Box[Allocator], img: Shared[ImageData]) {
-        glDeleteTextures(1, img.texture);
+    public static function dispose(allocator: Box[Allocator], img: Ptr[Void]) {
+        var shared = img as Shared[ImageData];
+        glDeleteTextures(1, shared.texture);
+        shared.free();
     }
 
     public static function getFileSize(id: CString) {

@@ -95,14 +95,14 @@ struct Shader {
         return (2 /* position */ + 1 /* color */ + (if this.texCoordIndex == -1 then 0 else 2)) * sizeof Float;
     }
 
-    public function prepare(drawCommand: Ptr[DrawCommand], buffer: Ptr[Float]) {
+    public function prepare(drawCall: Ptr[DrawCall], buffer: Ptr[Float]) {
         var stride = this.bytesPerVertex();
         var hasTexCoord = this.texCoordIndex > -1;
         var i = 0;
         var origin = null as Ptr[Float];
         if hasTexCoord {
-            for t in 0 ... drawCommand.length {
-                var tri = drawCommand.triangles[t];
+            for t in 0 ... drawCall.length {
+                var tri = drawCall.triangles[t];
                 var c = tri.color;
                 buffer[i++] = tri.t.p1.x;
                 buffer[i++] = tri.t.p1.y;
@@ -127,8 +127,8 @@ struct Shader {
             glVertexAttribPointer(this.texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride, origin + 3);
             GL.checkForErrors("attrib pointers");
         } else {
-            for t in 0 ... drawCommand.length {
-                var tri = drawCommand.triangles[t];
+            for t in 0 ... drawCall.length {
+                var tri = drawCall.triangles[t];
                 var c = tri.color;
                 buffer[i++] = tri.t.p1.x;
                 buffer[i++] = tri.t.p1.y;

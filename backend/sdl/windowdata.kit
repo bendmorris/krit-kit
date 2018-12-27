@@ -41,6 +41,8 @@ struct WindowData {
         }
         var surface = SDL_GetWindowSurface(window);
 
+        SDL_GL_MakeCurrent(window, glContext);
+
         SDL_GL_SetSwapInterval(1);
 
         glEnable(GL_BLEND);

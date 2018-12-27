@@ -1,5 +1,5 @@
 struct RenderSystem {
-    public var commands: Vector[DrawCommand];
+    public var commands: Vector[DrawCall];
 
     public static function new(allocator: Box[Allocator]) {
         return struct Self {
@@ -7,7 +7,7 @@ struct RenderSystem {
         };
     }
 
-    public function getDrawCommand(key: Ptr[DrawKey], dims: Ptr[Triangle], flexibleLayer: Bool): Ptr[DrawCommand] {
+    public function getDrawCall(key: Ptr[DrawKey], dims: Ptr[Triangle], flexibleLayer: Bool): Ptr[DrawCall] {
         // TODO: fallthrough logic
         // FIXME: kit bug; temp variable evaluation order in short circuited expressions
         if this.commands.length > 0 {
@@ -22,10 +22,8 @@ struct RenderSystem {
     }
 
     public function addTriangle(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
-        if color.getAlpha() > 0 {
-            var command = this.getDrawCommand(key, t, flexibleLayer);
-            command.addTriangle(t, uv, color);
-        }
+        var command = this.getDrawCall(key, t, flexibleLayer);
+        command.addTriangle(t, uv, color);
     }
 
     public function addRect(key: DrawKey, rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
@@ -52,7 +50,7 @@ struct RenderSystem {
         var xc = rect.height * matrix.c + matrix.tx;
         var yd = rect.height * matrix.d + matrix.ty;
 
-        var command = this.getDrawCommand(key, struct Triangle {
+        var command = this.getDrawCall(key, struct Triangle {
             p1: struct Point {x: matrix.tx, y: matrix.ty},
             p2: struct Point {x: xa, y: yb},
             p3: struct Point {x: xc, y: yd},

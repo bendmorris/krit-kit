@@ -11,5 +11,9 @@ struct Rectangle[T: Numeric = Float] {
         ($this.y) => $this.point.y;
         ($this.width) => $this.dimensions.width;
         ($this.height) => $this.dimensions.height;
+        ($this.left) => $this.point.x;
+        ($this.top) => $this.point.y;
+        ($this.right) => $this.point.x + $this.dimensions.width;
+        ($this.bottom) => $this.point.x + $this.dimensions.height;
     }
 }

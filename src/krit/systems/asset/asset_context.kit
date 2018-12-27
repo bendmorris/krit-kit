@@ -1,0 +1,35 @@
+struct AssetContext {
+    public var cache: Ptr[AssetCache];
+    public var assets: Vector[(CString, CString)];
+
+    public static function new(allocator: Box[Allocator], cache: Ptr[AssetCache]): Self {
+        return struct Self {
+            cache,
+            assets: Vector[(CString, CString)].new(64),
+        };
+    }
+
+    public function get(type: CString, id: CString): Ptr[Void] {
+        var result = this.cache.get(type, id);
+        this.assets.push((type, id));
+        return result;
+    }
+
+    public function getImage(id: CString): Ptr[ImageData] {
+        return this.get(ImageLoader.TYPE, id) as Ptr[ImageData];
+    }
+
+    public function getBitmapFont(id: CString): Ptr[BitmapFont] {
+        return this.get(BitmapFont.TYPE, id) as Ptr[BitmapFont];
+    }
+
+    public function dispose() {
+        for entry in this.assets {
+            var type: CString;
+            var id: CString;
+            (type, id) = entry;
+            this.cache.release(type, id);
+        }
+        this.assets.free();
+    }
+}

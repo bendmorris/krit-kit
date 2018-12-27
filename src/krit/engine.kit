@@ -20,7 +20,7 @@ struct Engine {
 
     // global context
     public var input: InputContext = struct InputContext;
-    // public var assetCache:
+    public var asset: AssetContext = struct AssetContext;
 
     var scenes: Vector[Ptr[Scene]] = Vector.new(8);
 
@@ -32,21 +32,26 @@ struct Engine {
         var childContext = context.copy();
         for scene in this.scenes {
             childContext.scene = scene;
+            childContext.asset = scene.asset;
             scene.update(childContext);
         }
     }
 
     public function render(context: Ptr[RenderContext]) using implicit context {
         var renderer = context.renderer;
-        this.onRender.invoke();
         renderer.startFrame();
+        renderer.startScene(null);
+        this.onRender.invoke();
+        renderer.flushScene(null);
         for scene in this.scenes {
             renderer.startScene(scene);
             scene.render();
             renderer.flushScene(scene);
         }
-        renderer.flushFrame();
+        renderer.flushScene(null);
         this.postRender.invoke();
+        renderer.flushScene(null);
+        renderer.flushFrame();
     }
 
     public function pushScene(scene: Ptr[Scene]) {

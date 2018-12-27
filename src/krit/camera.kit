@@ -5,16 +5,31 @@ struct Camera {
     public var scale: ScaleFactor = struct ScaleFactor;
     public var pixelSnapping: Bool = false;
 
-    public function init() {
-        this = struct Self;
+    public function transformPoint(p: Ptr[Point]): Ptr[Point] {
+        return p.subtract(this.position)
+            .scale2(this.scale.fullScaleX, this.scale.fullScaleY);
     }
 
-    public function transformX(x: Float) {
-        return (x - this.x) * this.scale.fullScaleX;
+    public function scaleDimensions(d: Ptr[Dimensions]): Ptr[Dimensions] {
+        d.setTo(d.width * this.scale.fullScaleX, d.height * this.scale.fullScaleY);
+        return d;
     }
 
-    public function transformY(y: Float) {
-        return (y - this.y) * this.scale.fullScaleY;
+    public function transformMatrix(m: Ptr[Matrix]): Ptr[Matrix] {
+        m.translate(-this.position.x, -this.position.y)
+            .scale(this.scale.fullScaleX, this.scale.fullScaleY);
+        return m;
+    }
+
+    public function update(update: Ptr[UpdateContext]) {
+        if this.dimensions.width == 0 && this.dimensions.height == 0 {
+            this.dimensions.setTo(update.window.width, update.window.height);
+        }
+        if this.scaleMode as Ptr[Void] != null {
+            this.scaleMode.updateScale(this, update.window);
+        } else {
+            this.dimensions.setTo(update.window.width, update.window.height);
+        }
     }
 
     rules {
@@ -26,7 +41,7 @@ struct Camera {
 }
 
 trait CameraScaleMode {
-    function getScale(camera: Ptr[Camera], window: Ptr[Window]): ScaleFactor;
+    function updateScale(camera: Ptr[Camera], window: Ptr[Window]): Void;
 }
 
 enum CameraType {
@@ -34,8 +49,8 @@ enum CameraType {
 }
 
 implement CameraScaleMode for CameraType {
-    public function getScale(camera: Ptr[Camera], window: Ptr[Window]): ScaleFactor {
-        return struct ScaleFactor {
+    public function updateScale(camera: Ptr[Camera], window: Ptr[Window]) {
+        camera.scale = struct ScaleFactor {
             scaleX: window.width / camera.dimensions.width,
             scaleY: window.height / camera.dimensions.height,
         };

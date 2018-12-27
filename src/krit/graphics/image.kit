@@ -23,18 +23,17 @@ struct Image {
 
 implement Graphic for Image {
     public function render(context: Ptr[RenderContext]): Void {
-        var position = context.transform(this.position + context.offset);
         var matrix = struct Matrix;
         matrix
             .translate(-this.origin.x, -this.origin.y)
             .rotate(this.angle)
             .scale(this.scale.fullScaleX, this.scale.fullScaleY)
-            .translate(position.x, position.y);
+            .translate(this.position.x, this.position.y);
         var key = struct DrawKey {
             image: this.region.image,
             smooth: this.smooth,
             blend: this.blendMode
         };
-        context.renderSystem.addRect(key, this.region.rect, matrix, this.color.withAlpha(this.alpha), false);
+        context.addRect(key, this.region.rect, matrix, this.color.withAlpha(this.alpha), false);
     }
 }

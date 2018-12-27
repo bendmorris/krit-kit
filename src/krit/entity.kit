@@ -18,9 +18,7 @@ struct Entity {
     public function update(context: Ptr[UpdateContext]) {
         this.onUpdate.invoke(this, context);
         match this.graphic {
-            Some(graphic) => if graphic.isActive() {
-                graphic.update(context);
-            }
+            Some(graphic) => graphic.update(context);
         }
         this.postUpdate.invoke(this, context);
     }
@@ -35,5 +33,9 @@ struct Entity {
             }
         }
         this.postRender.invoke(this, context);
+    }
+
+    public function setGraphic(graphic: Box[Graphic]) {
+        this.graphic = Some(graphic);
     }
 }

@@ -48,7 +48,7 @@ struct TriangleData {
     }
 }
 
-struct DrawCommand {
+struct DrawCall {
     public var key: DrawKey;
     public var triangles: CArray[TriangleData, 0x1000];
     public var length: Int = 0;

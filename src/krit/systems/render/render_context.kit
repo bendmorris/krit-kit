@@ -5,18 +5,6 @@ struct RenderContext {
     public var camera: Ptr[Camera] = null;
     public var offset: Point = struct Point;
 
-    public function transformX(x: Float) {
-        return if this.camera == null then x else this.camera.transformX(x);
-    }
-
-    public function transformY(y: Float) {
-        return if this.camera == null then y else this.camera.transformY(y);
-    }
-
-    public function transform(point: Point): Point {
-        return point.setTo(this.transformX(point.x), this.transformY(point.y));
-    }
-
     public function copy(): Self {
         return struct RenderContext {
             renderer: this.renderer,
@@ -25,5 +13,45 @@ struct RenderContext {
             camera: this.camera,
             offset: this.offset,
         };
+    }
+
+    public function addRect(key: Ptr[DrawKey], rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
+        this.transformMatrix(matrix);
+        this.renderSystem.addRect(key, rect, matrix, color, flexibleLayer);
+    }
+
+    public function addTriangle(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
+        this.transformTriangle(t);
+        this.renderSystem.addTriangle(key, t, uv, color, flexibleLayer);
+    }
+
+    function transformPoint(point: Ptr[Point]): Ptr[Point] {
+        point.add(this.offset);
+        if this.camera != null {
+            this.camera.transformPoint(point);
+        }
+        return point;
+    }
+
+    function transformRect(rect: Ptr[Rectangle]): Ptr[Rectangle] {
+        if this.camera != null {
+            this.transformPoint(rect.point);
+            this.camera.scaleDimensions(rect.dimensions);
+        }
+        return rect;
+    }
+
+    function transformTriangle(t: Ptr[Triangle]): Ptr[Triangle] {
+        this.transformPoint(t.p1);
+        this.transformPoint(t.p2);
+        this.transformPoint(t.p3);
+        return t;
+    }
+
+    function transformMatrix(m: Ptr[Matrix]): Ptr[Matrix] {
+        if this.camera != null {
+            this.camera.transformMatrix(m);
+        }
+        return m;
     }
 }

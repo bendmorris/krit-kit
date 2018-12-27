@@ -1,5 +1,80 @@
-/**
- * An AssetCache is an interface giving access to a set of assets which share
- * the same lifetime, such as assets for a Scene.
- */
-abstract AssetCache: Void {}
+/*struct AssetKey {
+    public var type: CString;
+    public var id: CString;
+}
+
+implement Hashable for AssetKey {
+    function hash(): Int {
+        return this.type.Hashable.hash() + this.id.Hashable.hash();
+    }
+}*/
+
+typedef AssetLoadFunction = function (Box[Allocator], CString) -> Shared[Void];
+typedef AssetDisposeFunction = function (Box[Allocator], Ptr[Void]) -> Void;
+
+struct AssetLoader {
+    public var load: AssetLoadFunction;
+    public var dispose: AssetDisposeFunction;
+}
+
+struct AssetCache {
+    // public var assets: Map[AssetKey, Ptr[Void]];
+    public var assets: Map[CString, Map[CString, Shared[Void]]];
+    public var loaders: Map[CString, AssetLoader];
+    var allocator: Box[Allocator];
+
+    public static function new(allocator: Box[Allocator]): Self using implicit allocator {
+        var loaders = Map[CString, AssetLoader].new(16);
+        var assets = Map[CString, Map[CString, Shared[Void]]].new(16);
+        var s = struct Self {
+            assets,
+            loaders,
+            allocator
+        };
+        s.register(ImageLoader.TYPE, struct AssetLoader {load: ImageLoader.load, dispose: ImageLoader.dispose});
+        s.register(BitmapFont.TYPE, struct AssetLoader {load: BitmapFont.load, dispose: BitmapFont.dispose});
+        return s;
+    }
+
+    public function register(type: CString, loader: AssetLoader) {
+        this.loaders.put(type, loader);
+        this.assets.put(type, Map[CString, Shared[Void]].new(64));
+    }
+
+    public function get(type: CString, id: CString): Shared[Void] using implicit this.allocator {
+        var loader = this.loaders[type];
+        var assets = this.getAssets(type);
+        var asset = assets.get(id);
+        match asset {
+            Some(x) => {
+                var shared = x as Shared[Void];
+                shared.ref();
+                return shared;
+            }
+            None => using implicit this.allocator {
+                var asset = loader.load(id);
+                assets.put(id, asset);
+                return asset;
+            }
+        }
+    }
+
+    public function release(type: CString, id: CString) {
+        var loader = this.loaders[type];
+        var assets = this.getAssets(type);
+        var asset = assets.get(id);
+        match asset {
+            Some(x) => using implicit this.allocator {
+                var shouldFree = x.decrement();
+                if shouldFree {
+                    loader.dispose(id);
+                    x.free();
+                }
+            }
+        }
+    }
+
+    function getAssets(type: CString): Ptr[Map[CString, Shared[Void]]] {
+        return this.assets.getRef(type).unwrap();
+    }
+}
