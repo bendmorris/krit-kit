@@ -1,16 +1,41 @@
 struct BitmapText {
+    static var stack: GlyphRenderStack = struct GlyphRenderStack;
+    // static var formatTags: Map[CString, Array[TextOpcode]] = Self.initFormatTags();
+
+    // static function initFormatTags() {
+        // var map: Map[CString, Array[TextOpcode]] = Map.new(16);
+        // //map.put("br", )
+        // return map;
+    // }
+
     public var position: Point = struct Point;
     public var dimensions: Dimensions[Int] = struct Dimensions[Int];
     public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var visible: Bool = true;
-    public var text: String;
+    public var text: CString;
+    public var options: BitmapTextOptions;
+    var opcodes: Vector[TextOpcode];
 
-    public static function new(source: ImageRegion, text: String, options: BitmapTextOptions): Self {
-        return struct BitmapText {
-            text,
+    public static function new(text: CString, options: BitmapTextOptions): Self {
+        var s = struct BitmapText {
+            options,
         };
+        s.setText(text);
+    }
+
+    public function setText(text: CString) {
+        this.text = text;
+        this.parseText();
+    }
+
+    function parseText() {
+        Self.stack.clear();
+    }
+
+    rules {
+        ($this.size) => $this.options.size;
     }
 }
 
@@ -18,6 +43,53 @@ enum AlignType {
     LeftAlign;
     CenterAlign;
     RightAlign;
+}
+
+typedef CustomRenderFunction = function (&GlyphRenderData) -> Void;
+
+struct GlyphRenderData {
+    public var char: Ptr[Char];
+    public var position: Point;
+    public var color: Color;
+    public var alpha: Float;
+    public var size: Int;
+    public var scale: ScaleFactor;
+}
+
+struct GlyphRenderStack {
+    public var fontStack: Vector[CString] = Vector.new(4);
+    public var sizeStack: Vector[Int] = Vector.new(4);
+    public var scaleStack: Vector[Float] = Vector.new(4);
+    public var colorStack: Vector[Color] = Vector.new(4);
+    public var alphaStack: Vector[Float] = Vector.new(4);
+    public var transformStack: Vector[CustomRenderFunction] = Vector.new(4);
+
+    public function clear() {
+        this.fontStack.clear();
+        this.sizeStack.clear();
+        this.scaleStack.clear();
+        this.colorStack.clear();
+        this.alphaStack.clear();
+        this.transformStack.clear();
+    }
+}
+
+enum TextOpcode {
+    SetColor(color: Color);
+    SetAlpha(alpha: Float);
+    SetScale(scale: Float);
+    SetFont(font: CString);
+    SetSize(size: Int);
+    TextBlock(text: Slice[Char]);
+    NewLine(width: Float, height: Float, align: AlignType);
+    // Image(image: Image, padding: Int);
+    Custom(f: CustomRenderFunction);
+    PopColor;
+    PopAlpha;
+    PopScale;
+    PopFont;
+    PopSize;
+    PopCustom;
 }
 
 struct BitmapTextOptions {
@@ -36,5 +108,7 @@ struct FormatTagOptions {
 }
 
 implement Graphic for BitmapText {
-    public function render(context: Ptr[RenderContext]): Void {}
+    public function render(context: Ptr[RenderContext]): Void {
+
+    }
 }

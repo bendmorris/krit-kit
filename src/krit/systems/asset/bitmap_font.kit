@@ -97,7 +97,6 @@ struct BitmapFont {
                         match key {
                             "file" => {
                                 using implicit font.allocator {
-                                    printf("loading image %s\n", value);
                                     var asset = ImageLoader.load(value);
                                     font.pages.push(ImageRegion.fromImage(asset));
                                 }

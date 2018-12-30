@@ -5,7 +5,7 @@ import krit.backend.**;
 using rules KritUtils;
 
 var bunnies: Int = 0;
-var asset: Ptr[ImageData] = null;
+// var asset: Ptr[ImageData] = null;
 
 function rotateImage(e: Ptr[Entity], context: Ptr[UpdateContext]) {
     var img: Ptr[Image] = e.userData;
@@ -23,8 +23,8 @@ function scrollDown(action: &ActionContext, update: &UpdateContext) {scroll(upda
 function scrollLeft(action: &ActionContext, update: &UpdateContext) {scroll(update, -1, 0);}
 function scrollRight(action: &ActionContext, update: &UpdateContext) {scroll(update, 1, 0);}
 function scroll(update: &UpdateContext, x: Int, y: Int) {
-    update.scene.camera.position.x += update.elapsed * 64 * x;
-    update.scene.camera.position.y += update.elapsed * 64 * y;
+    update.scene.camera.position.x += update.elapsed * 256 * x;
+    update.scene.camera.position.y += update.elapsed * 256 * y;
 }
 
 function mousePos(action: &ActionContext, update: &UpdateContext) {
@@ -38,11 +38,11 @@ function addBunnies(action: &ActionContext, update: &UpdateContext) {
 function spawnBunnies(scene: Ptr[Scene], n: Int) {
     bunnies += n;
     printf("bunnies: %i\n", bunnies);
-    if asset == null {
+    // if asset == null {
         var cache = AssetCache.new();
         var context = AssetContext.new(cache);
-        asset = context.getImage("wabbit.png");
-    }
+        var asset = context.getImage("wabbit2.png");
+    // }
     var entityPool: PoolAllocator[Entity] = PoolAllocator[Entity].new(n);
     var imagePool: PoolAllocator[Image] = PoolAllocator[Image].new(n);
     for i in 0 ... n {
@@ -50,7 +50,7 @@ function spawnBunnies(scene: Ptr[Scene], n: Int) {
         (*image) = struct Image {region: ImageRegion.fromImage(asset)};
         image.centerOrigin();
         image.angle = PI * 2 * random();
-        image.position.setTo(-128 + (640 + 256) * random(), -128 + (480 + 256) * random());
+        image.position.setTo((640 + 256) * random(), (480 + 256) * random());
         image.scale.scale = 0.5 + random();
         image.alpha = random() as Float;
         image.color = Color.fromRgb(random(), random(), random());
@@ -58,8 +58,7 @@ function spawnBunnies(scene: Ptr[Scene], n: Int) {
         var entity: Ptr[Entity] = entityPool.alloc(1).unwrap();
         (*entity) = struct Entity;
         entity.position.translate(64, 64);
-        var box = image as Box[Graphic];
-        entity.graphic = Some(box);
+        entity.setGraphic(image as Box[Graphic]);
         entity.userData = image;
         entity.onUpdate = rotateImage;
 
@@ -93,10 +92,8 @@ function main() {
     scene.camera.scaleMode = DefaultStretchScaleMode;
     scene.camera.dimensions.setTo(1920, 1080);
     scene.bgColor = 0x00d4aa;
+    // scene.bgColor = 0xaaccff;
     app.engine.pushScene(scene);
-
-    var n = 250;
-    spawnBunnies(scene, n);
 
     scene.input.key.define(Key.Left, "scroll_left");
     scene.input.key.define(Key.Right, "scroll_right");
@@ -117,7 +114,122 @@ function main() {
 
     var font = BitmapFont.load("test-project/assets/fonts/coiny.84.fnt");
 
-    app.engine.postRender = drawLine;
+    var cache = AssetCache.new();
+    var context = AssetContext.new(cache);
+    // var asset = context.getImage("hills.png");
+    var asset = context.getImage("trees.png");
+    var asset2 = context.getImage("light.png");
+    var asset3 = context.getImage("swirl.png");
+
+    var baseBg = struct Backdrop {
+        region: ImageRegion.fromImage(asset3),
+        scroll: P(0.1, 0),
+        repeatX: true,
+        repeatY: true,
+        blendMode: BlendScreen,
+        color: scene.bgColor,
+        alpha: 0.25,
+    };
+    var imgE = struct Entity;
+    imgE.setGraphic(baseBg);
+    scene.entities.push(imgE);
+
+    var backdrop = struct Backdrop {
+        region: struct ImageRegion {image: asset, rect: Ri(0, 1536, 2048, 512)},
+        scale: struct ScaleFactor {scale: 1080_f32 / 512},
+        repeatY: false,
+        scroll: P(0.25, 0),
+        color: scene.bgColor.lerp(Color.Black, 0.0625),
+    };
+    var entity = struct Entity;
+    entity.setGraphic(backdrop);
+    scene.entities.push(entity);
+
+    var img1 = struct Backdrop {
+        position: P(128, -64),
+        region: ImageRegion.fromImage(asset2),
+        scale: struct ScaleFactor {scale: 1080_f32 / 1024},
+        scroll: P(0.25 * 0.75, 0.125),
+        repeatX: true,
+        repeatY: true,
+        color: scene.bgColor.lerp(Color.White, 0.5),
+        blendMode: BlendScreen
+    };
+    var imgE1 = struct Entity;
+    imgE1.setGraphic(img1);
+    scene.entities.push(imgE1);
+
+    var backdrop2 = struct Backdrop {
+        region: struct ImageRegion {image: asset, rect: Ri(0, 1024, 2048, 512)},
+        scale: struct ScaleFactor {scale: 1080_f32 / 512},
+        repeatY: false,
+        scroll: P(0.375, 0),
+        color: scene.bgColor.lerp(Color.Black, 0.125),
+    };
+    var entity2 = struct Entity;
+    entity2.setGraphic(backdrop2);
+    scene.entities.push(entity2);
+
+    var img2 = struct Backdrop {
+        position: P(256, 0),
+        region: ImageRegion.fromImage(asset2),
+        scale: struct ScaleFactor {scale: 1080_f32 / 1024},
+        scroll: P(0.375 * 0.75, 0.125),
+        repeatX: true,
+        repeatY: true,
+        color: scene.bgColor.lerp(Color.White, 0.5),
+        blendMode: BlendScreen
+    };
+    var imgE2 = struct Entity;
+    imgE2.setGraphic(img2);
+    scene.entities.push(imgE2);
+
+    var backdrop3 = struct Backdrop {
+        region: struct ImageRegion {image: asset, rect: Ri(0, 512, 2048, 512)},
+        scale: struct ScaleFactor {scale: 1080_f32 / 512},
+        repeatY: false,
+        scroll: P(0.5, 0),
+        color: scene.bgColor.lerp(Color.Black, 0.1875),
+    };
+    var entity3 = struct Entity;
+    entity3.setGraphic(backdrop3);
+    scene.entities.push(entity3);
+
+    var img3 = struct Backdrop {
+        position: P(384, 64),
+        region: ImageRegion.fromImage(asset2),
+        scale: struct ScaleFactor {scale: 1080_f32 / 1024},
+        scroll: P(0.5 * 0.75, 0.125),
+        repeatX: true,
+        repeatY: true,
+        color: scene.bgColor.lerp(Color.White, 0.5),
+        blendMode: BlendScreen
+    };
+    var imgE3 = struct Entity;
+    imgE3.setGraphic(img3);
+    scene.entities.push(imgE3);
+
+    var backdrop4 = struct Backdrop {
+        region: struct ImageRegion {image: asset, rect: Ri(0, 0, 2048, 512)},
+        scale: struct ScaleFactor {scale: 1080_f32 / 512},
+        repeatY: false,
+        scroll: P(0.625, 0),
+        color: scene.bgColor.lerp(Color.Black, 0.25),
+    };
+    var entity4 = struct Entity;
+    entity4.setGraphic(backdrop4);
+    scene.entities.push(entity4);
+
+    var ninesliceAsset = context.getImage("button.png");
+    var nineslice = NineSlice.new(ImageRegion.fromImage(ninesliceAsset), 32, 32, 32, 32);
+    nineslice.dimensions.width = 256;
+    nineslice.dimensions.height = 128;
+    nineslice.color = 0xff8080;
+    var ninesliceE = struct Entity;
+    ninesliceE.setGraphic(nineslice);
+    scene.entities.push(ninesliceE);
+
+    // app.engine.postRender = drawLine;
 
     app.run();
 }

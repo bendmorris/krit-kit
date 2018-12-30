@@ -1,9 +1,14 @@
+struct RenderTransform {
+    public var scroll: Point = P(1, 1);
+}
+
 struct RenderContext {
     public var renderer: Ptr[Renderer];
     public var renderSystem: Ptr[RenderSystem];
     public var window: Ptr[Window];
     public var camera: Ptr[Camera] = null;
     public var offset: Point = struct Point;
+    public var transform: Ptr[RenderTransform] = null;
 
     public function copy(): Self {
         return struct RenderContext {
@@ -20,12 +25,20 @@ struct RenderContext {
         this.renderSystem.addRect(key, rect, matrix, color, flexibleLayer);
     }
 
+    public function addRectRaw(key: Ptr[DrawKey], rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
+        this.renderSystem.addRect(key, rect, matrix, color, flexibleLayer);
+    }
+
     public function addTriangle(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
         this.transformTriangle(t);
         this.renderSystem.addTriangle(key, t, uv, color, flexibleLayer);
     }
 
-    function transformPoint(point: Ptr[Point]): Ptr[Point] {
+    public function addTriangleRaw(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
+        this.renderSystem.addTriangle(key, t, uv, color, flexibleLayer);
+    }
+
+    function transformPoint(point: Ptr[Point]): Ptr[Point] using implicit this.transform {
         point.add(this.offset);
         if this.camera != null {
             this.camera.transformPoint(point);
@@ -33,25 +46,53 @@ struct RenderContext {
         return point;
     }
 
-    function transformRect(rect: Ptr[Rectangle]): Ptr[Rectangle] {
+    function untransformPoint(point: Ptr[Point]): Ptr[Point] using implicit this.transform {
+        if this.camera != null {
+            this.camera.untransformPoint(point);
+        }
+        point.subtract(this.offset);
+        return point;
+    }
+
+    function transformRect(rect: Ptr[Rectangle]): Ptr[Rectangle] using implicit this.transform {
         if this.camera != null {
             this.transformPoint(rect.point);
-            this.camera.scaleDimensions(rect.dimensions);
+            this.transformDimensions(rect.dimensions);
         }
         return rect;
     }
 
-    function transformTriangle(t: Ptr[Triangle]): Ptr[Triangle] {
+    // TODO: untransformRect
+
+    function transformTriangle(t: Ptr[Triangle]): Ptr[Triangle] using implicit this.transform {
         this.transformPoint(t.p1);
         this.transformPoint(t.p2);
         this.transformPoint(t.p3);
         return t;
     }
 
-    function transformMatrix(m: Ptr[Matrix]): Ptr[Matrix] {
+    // TODO: untransformTriangle
+
+    function transformMatrix(m: Ptr[Matrix]): Ptr[Matrix] using implicit this.transform {
         if this.camera != null {
             this.camera.transformMatrix(m);
         }
         return m;
+    }
+
+    // TODO: untransformMatrix
+
+    function transformDimensions(d: Ptr[Dimensions]): Ptr[Dimensions] using implicit this.transform {
+        if this.camera != null {
+            this.camera.scaleDimensions(d);
+        }
+        return d;
+    }
+
+    function untransformDimensions(d: Ptr[Dimensions]): Ptr[Dimensions] using implicit this.transform {
+        if this.camera != null {
+            this.camera.unscaleDimensions(d);
+        }
+        return d;
     }
 }

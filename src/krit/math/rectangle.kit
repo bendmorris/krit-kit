@@ -6,6 +6,14 @@ struct Rectangle[T: Numeric = Float] {
         return this.point.eq(other.point) && this.dimensions.eq(other.dimensions);
     }
 
+    public function setTo(x: T, y: T, w: T, h: T): Ptr[Self] {
+        this.x = x;
+        this.y = y;
+        this.width = w;
+        this.height = h;
+        return this;
+    }
+
     rules {
         ($this.x) => $this.point.x;
         ($this.y) => $this.point.y;

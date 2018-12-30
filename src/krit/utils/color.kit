@@ -24,6 +24,21 @@
     public function withAlpha(a: Float): ColorWithAlpha {
         return ((((0xff_f32 * a) as Uint32 & 0xff) << 24) | this) as ColorWithAlpha;
     }
+
+    public function lerp(other: Color, mix: Float): Color {
+        if mix <= 0 {
+            return this;
+        } else if mix >= 1 {
+            return other;
+        } else {
+            var rm = 1 - mix;
+            return Color.fromRgb(
+                this.getRed() * rm + other.getRed() * mix,
+                this.getGreen() * rm + other.getGreen() * mix,
+                this.getBlue() * rm + other.getBlue() * mix
+            );
+        }
+    }
 }
 
 abstract ColorWithAlpha: Color {

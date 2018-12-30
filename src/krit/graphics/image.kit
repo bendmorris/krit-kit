@@ -10,6 +10,7 @@ struct Image {
     public var smooth: Bool = true;
 
     var region: ImageRegion;
+    var scroll: Point = P(1, 1);
 
     public function centerOrigin() {
         this.origin.setTo(this.width / 2_f32, this.height / 2_f32);
@@ -22,10 +23,10 @@ struct Image {
 }
 
 implement Graphic for Image {
-    public function render(context: Ptr[RenderContext]): Void {
-        var matrix = struct Matrix;
+    public function render(render: Ptr[RenderContext]): Void {
+        render.transform = struct RenderTransform {scroll: this.scroll};
+        var matrix = struct Matrix {tx: -this.origin.x, ty: -this.origin.y};
         matrix
-            .translate(-this.origin.x, -this.origin.y)
             .rotate(this.angle)
             .scale(this.scale.fullScaleX, this.scale.fullScaleY)
             .translate(this.position.x, this.position.y);
@@ -34,6 +35,6 @@ implement Graphic for Image {
             smooth: this.smooth,
             blend: this.blendMode
         };
-        context.addRect(key, this.region.rect, matrix, this.color.withAlpha(this.alpha), false);
+        render.addRect(key, this.region.rect, matrix, this.color.withAlpha(this.alpha), false);
     }
 }

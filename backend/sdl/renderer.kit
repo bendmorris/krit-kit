@@ -37,10 +37,10 @@ struct Renderer {
                 glBlendEquation(GL_FUNC_ADD);
                 glBlendFuncSeparate(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
             }
-            // Screen => {
-            //     glBlendEquation(${GL_FUNC_ADD: Int});
-            //     glBlendFuncSeparate(${GL_ONE: Int}, ${GL_ONE_MINUS_SRC_COLOR: Int}, ${GL_ZERO: Int}, ${GL_ONE: Int});
-            // }
+            BlendScreen => {
+                glBlendEquation(GL_FUNC_ADD);
+                glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_COLOR, GL_ZERO, GL_ONE);
+            }
             Subtract => {
                 glBlendEquationSeparate(GL_FUNC_REVERSE_SUBTRACT, GL_FUNC_ADD);
                 glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
@@ -88,8 +88,8 @@ struct Renderer {
     }
 
     public function flushScene(context: Ptr[RenderContext], scene: Ptr[Scene]) {
-        for command in this.renderSystem.commands {
-            this.drawCall(context, command);
+        for call in this.renderSystem.calls {
+            this.drawCall(context, call);
         }
         this.renderSystem.clear();
     }
@@ -121,10 +121,8 @@ struct Renderer {
                 if shader == null {
                     shader = if drawCall.image == null then &this.defaultColorShader else &this.defaultTextureShader;
                 }
-                shader.bind(Self._ortho);
 
                 if drawCall.image != null {
-                    glActiveTexture(GL_TEXTURE0);
                     glBindTexture(GL_TEXTURE_2D, drawCall.image.texture);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, if drawCall.smooth then GL_LINEAR else GL_NEAREST);
@@ -132,6 +130,8 @@ struct Renderer {
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
                     GL.checkForErrors("bind texture");
                 }
+                shader.bind(Self._ortho);
+                Self.setBlendMode(drawCall.blend);
 
                 match drawCall.clip {
                     Some(rect) => {
@@ -152,8 +152,6 @@ struct Renderer {
                     this.bufferPtr = this.renderData.ref() as Ptr[Float];
                 }
                 shader.prepare(drawCall, this.renderData.ref() as Ptr[Float]);
-
-                Self.setBlendMode(drawCall.blend);
 
                 glDrawArrays(GL_TRIANGLES, 0, drawCall.length * 3);
                 GL.checkForErrors("render");

@@ -4,6 +4,8 @@ struct ScaleFactor {
     public var scaleY: Float = 1;
 
     rules {
+        ($this.x) => $this.scaleX;
+        ($this.y) => $this.scaleY;
         ($this.fullScaleX) => $this.scale * $this.scaleX;
         ($this.fullScaleY) => $this.scale * $this.scaleY;
 

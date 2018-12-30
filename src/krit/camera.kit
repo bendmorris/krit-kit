@@ -5,20 +5,50 @@ struct Camera {
     public var scale: ScaleFactor = struct ScaleFactor;
     public var pixelSnapping: Bool = false;
 
-    public function transformPoint(p: Ptr[Point]): Ptr[Point] {
-        return p.subtract(this.position)
+    public function transformPoint(transform: Ptr[RenderTransform], p: Ptr[Point]): Ptr[Point] {
+        var position = this.position.copy();
+        if transform != null {
+            position.scale2(transform.scroll.x, transform.scroll.y);
+        }
+        return p.subtract(position)
             .scale2(this.scale.fullScaleX, this.scale.fullScaleY);
     }
 
-    public function scaleDimensions(d: Ptr[Dimensions]): Ptr[Dimensions] {
-        d.setTo(d.width * this.scale.fullScaleX, d.height * this.scale.fullScaleY);
-        return d;
+    public function untransformPoint(transform: Ptr[RenderTransform], p: Ptr[Point]): Ptr[Point] {
+        var position = this.position.copy();
+        if transform != null {
+            position.scale2(transform.scroll.x, transform.scroll.y);
+        }
+        return p.scale2(1 / this.scale.fullScaleX, 1 / this.scale.fullScaleY)
+            .add(position);
     }
 
-    public function transformMatrix(m: Ptr[Matrix]): Ptr[Matrix] {
-        m.translate(-this.position.x, -this.position.y)
+    public function scaleDimensions(transform: Ptr[RenderTransform], d: Ptr[Dimensions]): Ptr[Dimensions] {
+        return d.setTo(d.width * this.scale.fullScaleX, d.height * this.scale.fullScaleY)
+            as Ptr[Dimensions]; // kit #92
+    }
+
+    public function unscaleDimensions(transform: Ptr[RenderTransform], d: Ptr[Dimensions]): Ptr[Dimensions] {
+        return d.setTo(d.width / this.scale.fullScaleX, d.height / this.scale.fullScaleY)
+            as Ptr[Dimensions]; // kit #92
+    }
+
+    public function transformMatrix(transform: Ptr[RenderTransform], m: Ptr[Matrix]): Ptr[Matrix] {
+        var position = this.position.copy();
+        if transform != null {
+            position.scale2(transform.scroll.x, transform.scroll.y);
+        }
+        return m.translate(-position.x, -position.y)
             .scale(this.scale.fullScaleX, this.scale.fullScaleY);
-        return m;
+    }
+
+    public function untransformMatrix(transform: Ptr[RenderTransform], m: Ptr[Matrix]): Ptr[Matrix] {
+        var position = this.position.copy();
+        if transform != null {
+            position.scale2(transform.scroll.x, transform.scroll.y);
+        }
+        return m.scale(1 / this.scale.fullScaleX, 1 / this.scale.fullScaleY)
+            .translate(position.x, position.y);
     }
 
     public function update(update: Ptr[UpdateContext]) {

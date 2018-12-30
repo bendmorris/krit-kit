@@ -1,10 +1,16 @@
 rules KritUtils {
     (P()) => struct Point;
+    (Pi()) => struct Point[Int];
     (P($x, $y)) => struct Point {x: $x, y: $y};
+    (Pi($x, $y)) => struct Point[Int] {x: $x, y: $y};
     (D()) => struct Dimensions;
+    (Di()) => struct Dimensions[Int];
     (D($w, $h)) => struct Dimensions {x: $w, y: $h};
+    (Di($w, $h)) => struct Dimensions[Int] {x: $w, y: $h};
     (R()) => struct Rectangle;
+    (R9()) => struct Rectangle[Int];
     (R($x, $y, $w, $h)) => struct Rectangle {point: P($x, $y), dimensions: D($w, $h)};
+    (Ri($x, $y, $w, $h)) => struct Rectangle[Int] {point: Pi($x, $y), dimensions: Di($w, $h)};
     (T($x1, $y1, $x2, $y2, $x3, $y3)) => struct Triangle {p1: P($x1, $y1), p2: P($x2, $y2), p3: P($x3, $y3)};
     (M($a, $b, $c, $d, $tx, $ty)) => struct Matrix {a: $a, b: $b, c: $c, d: $d, tx: $tx, ty: $ty};
 }

@@ -25,9 +25,9 @@ struct Entity {
 
     public function render(context: Ptr[RenderContext]) {
         this.onRender.invoke(this, context);
-        var childContext = context.copy();
         match this.graphic {
             Some(graphic) => {
+                var childContext = context.copy();
                 childContext.offset = this.position;
                 graphic.render(childContext);
             }

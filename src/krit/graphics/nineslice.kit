@@ -1,16 +1,112 @@
 struct NineSlice {
     public var position: Point = struct Point;
-    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
+    public var origin: Point = struct Point;
     public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var visible: Bool = true;
+    public var blendMode: BlendMode = Alpha;
+    public var smooth: Bool = true;
 
-    public static function new(source: ImageRegion) {
-        return struct NineSlice;
+    public var dimensions: Dimensions = Di();
+    var ul: ImageRegion;
+    var uc: ImageRegion;
+    var ur: ImageRegion;
+    var cl: ImageRegion;
+    var cc: ImageRegion;
+    var cr: ImageRegion;
+    var bl: ImageRegion;
+    var bc: ImageRegion;
+    var br: ImageRegion;
+    var scroll: Point = P(1, 1);
+
+    public static function new(region: ImageRegion, leftWidth: Int, rightWidth: Int, topHeight: Int, bottomHeight: Int): Self {
+        var x0 = region.x;
+        var y0 = region.y;
+        var w = region.width;
+        var h = region.height;
+        var cx = x0 + leftWidth;
+        var cw = w - leftWidth - rightWidth;
+        var cy = y0 + topHeight;
+        var ch = h - topHeight - bottomHeight;
+        var rx = x0 + w - rightWidth;
+        var by = y0 + h - bottomHeight;
+
+        var ul = region.copy();
+        ul.rect.setTo(x0, y0, leftWidth, topHeight);
+        var uc = region.copy();
+        uc.rect.setTo(cx, y0, cw, topHeight);
+        var ur = region.copy();
+        ur.rect.setTo(rx, y0, rightWidth, topHeight);
+        var cl = region.copy();
+        cl.rect.setTo(x0, cy, leftWidth, ch);
+        var cc = region.copy();
+        cc.rect.setTo(cx, cy, cw, ch);
+        var cr = region.copy();
+        cr.rect.setTo(rx, cy, rightWidth, ch);
+        var bl = region.copy();
+        bl.rect.setTo(x0, by, leftWidth, bottomHeight);
+        var bc = region.copy();
+        bc.rect.setTo(cx, by, cw, bottomHeight);
+        var br = region.copy();
+        br.rect.setTo(rx, by, rightWidth, bottomHeight);
+
+        return struct Self {ul, uc, ur, cl, cc, cr, bl, bc, br, dimensions: D(w, h)};
+    }
+
+    public function centerOrigin() {
+        this.origin.setTo(this.width / 2_f32, this.height / 2_f32);
+    }
+
+    rules {
+        ($this.width) => $this.dimensions.width;
+        ($this.height) => $this.dimensions.height;
     }
 }
 
 implement Graphic for NineSlice {
-    public function render(context: Ptr[RenderContext]): Void {}
+    public function render(render: Ptr[RenderContext]): Void {
+        // TODO: improve with static for
+        render.transform = struct RenderTransform {scroll: this.scroll};
+        var lw = this.ul.rect.width;
+        var rw = this.ur.rect.width;
+        var uh = this.ul.rect.height;
+        var bh = this.bl.rect.height;
+
+        var cx = lw;
+        var cw = this.width - lw - rw;
+        var rx = this.width - rw;
+        var cy = this.ul.rect.height;
+        var ch = this.height - uh - bh;
+        var by = this.height - bh;
+
+        var components: CArray[(Ptr[ImageRegion], Rectangle), 9] = [
+            (&this.ul, R(0, 0, lw, uh)),
+            (&this.ur, R(rx, 0, rw, uh)),
+            (&this.bl, R(0, by, lw, bh)),
+            (&this.br, R(rx, by, rw, bh)),
+            (&this.uc, R(cx, 0, cw, uh)),
+            (&this.bc, R(cx, by, cw, bh)),
+            (&this.cl, R(0, cy, lw, ch)),
+            (&this.cr, R(rx, cy, rw, ch)),
+            (&this.cc, R(cx, cy, cw, ch)),
+        ];
+        var key = struct DrawKey {
+            smooth: this.smooth,
+            blend: this.blendMode
+        };
+        for i in 0 ... components.length {
+            var img: Ptr[ImageRegion];
+            var rect: Rectangle;
+            (img, rect) = components[i];
+            key.image = img.image;
+            var matrix = struct Matrix;
+            matrix
+                .scale(rect.width / img.width, rect.height / img.height)
+                .translate(rect.x - this.origin.x, rect.y - this.origin.y)
+                .scale(this.scale.fullScaleX, this.scale.fullScaleY)
+                .translate(this.position.x, this.position.y);
+            render.addRect(key, img.rect, matrix, this.color.withAlpha(this.alpha), false);
+        }
+    }
 }

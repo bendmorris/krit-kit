@@ -7,25 +7,30 @@ abstract ImageLoader: Void {
     using implicit allocator {
         // shortcut for now: just load from file
         var surface = IMG_Load(id);
-        // premultiply alpha
         SDL_LockSurface(surface);
         var size = surface.w * surface.h;
         var pixels: Ptr[Uint8] = surface.pixels;
-        for i in 0 ... size {
-            var a = pixels[i * 4 + 3];
-            pixels[i * 4] = (pixels[i * 4] * a / 0xff) as Uint8;
-            pixels[i * 4 + 1] = (pixels[i * 4 + 1] * a / 0xff) as Uint8;
-            pixels[i * 4 + 2] = (pixels[i * 4 + 2] * a / 0xff) as Uint8;
+        var f: Double = 0;
+        var mode = GL_RGB;
+        if surface.format.BytesPerPixel == 4 {
+            // premultiply alpha
+            for i in 0 ... size {
+                var a = pixels[i * 4 + 3];
+                pixels[i * 4] = (pixels[i * 4] as Uint32 * a / 0xff) as Uint8;
+                pixels[i * 4 + 1] = (pixels[i * 4 + 1] as Uint32 * a / 0xff) as Uint8;
+                pixels[i * 4 + 2] = (pixels[i * 4 + 2] as Uint32 * a / 0xff) as Uint8;
+                f += pixels[i * 4];
+            }
+            mode = GL_RGBA;
         }
         SDL_UnlockSurface(surface);
         // upload texture
         var img: Shared[ImageData] = Shared.alloc(sizeof ImageData);
         img.dimensions.width = surface.w;
         img.dimensions.height = surface.h;
-        var texture: Ptr[GLuint] = img.texture;
-        glGenTextures(1, texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface.w, surface.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface.pixels);
+        glGenTextures(1, &img.texture);
+        glBindTexture(GL_TEXTURE_2D, img.texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, mode, surface.w, surface.h, 0, mode, GL_UNSIGNED_BYTE, surface.pixels);
         GL.checkForErrors("asset load");
         SDL_FreeSurface(surface);
         return img as Shared[Void];
@@ -34,7 +39,6 @@ abstract ImageLoader: Void {
     public static function dispose(allocator: Box[Allocator], img: Ptr[Void]) {
         var shared = img as Shared[ImageData];
         glDeleteTextures(1, shared.texture);
-        shared.free();
     }
 
     public static function getFileSize(id: CString) {

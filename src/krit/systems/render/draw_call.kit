@@ -53,11 +53,11 @@ struct DrawCall {
     public var triangles: CArray[TriangleData, 0x1000];
     public var length: Int = 0;
 
-    public function matches(key: DrawKey): Bool {
+    public function matches(key: Ptr[DrawKey]): Bool {
         return this.key.eq(key);
     }
 
-    public function init(key: DrawKey) {
+    public function init(key: Ptr[DrawKey]) {
         this.reset();
         this.key = key;
     }
@@ -70,7 +70,7 @@ struct DrawCall {
         return this.length >= this.triangles.length;
     }
 
-    public function addTriangle(t: Triangle, uv: Triangle, color: ColorWithAlpha) {
+    public function addTriangle(t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha) {
         var triangle = &this.triangles[this.length++];
         triangle.t = t;
         triangle.uv = uv;

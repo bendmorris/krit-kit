@@ -1,32 +1,32 @@
 struct RenderSystem {
-    public var commands: Vector[DrawCall];
+    public var calls: Vector[DrawCall];
 
     public static function new(allocator: Box[Allocator]) {
         return struct Self {
-            commands: Vector.new(0x400),
+            calls: Vector.new(0x400),
         };
     }
 
     public function getDrawCall(key: Ptr[DrawKey], dims: Ptr[Triangle], flexibleLayer: Bool): Ptr[DrawCall] {
         // TODO: fallthrough logic
         // FIXME: kit bug; temp variable evaluation order in short circuited expressions
-        if this.commands.length > 0 {
-            var last = &this.commands.unsafeLast;
+        if this.calls.length > 0 {
+            var last = &this.calls.unsafeLast;
             if last.matches(key) && !last.isFull() {
                 return last;
             }
         }
-        var next = this.commands.grow();
+        var next = this.calls.grow();
         next.init(key);
         return next;
     }
 
-    public function addTriangle(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
-        var command = this.getDrawCall(key, t, flexibleLayer);
-        command.addTriangle(t, uv, color);
+    public function addTriangle(key: Ptr[DrawKey], t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
+        var call = this.getDrawCall(key, t, flexibleLayer);
+        call.addTriangle(t, uv, color);
     }
 
-    public function addRect(key: DrawKey, rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
+    public function addRect(key: Ptr[DrawKey], rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
         var uvx1: RenderFloat;
         var uvy1: RenderFloat;
         var uvx2: RenderFloat;
@@ -38,10 +38,10 @@ struct RenderSystem {
             uvy2 = rect.height;
         } else {
             var img = *imageData;
-            uvx1 = rect.x / img.width;
-            uvy1 = rect.y / img.height;
-            uvx2 = (rect.x + rect.width) / img.width;
-            uvy2 = (rect.y + rect.height) / img.height;
+            uvx1 = rect.x / (img.width as Float);
+            uvy1 = rect.y / (img.height as Float);
+            uvx2 = (rect.x + rect.width) / (img.width as Float);
+            uvy2 = (rect.y + rect.height) / (img.height as Float);
         }
 
         // matrix transformations
@@ -50,12 +50,12 @@ struct RenderSystem {
         var xc = rect.height * matrix.c + matrix.tx;
         var yd = rect.height * matrix.d + matrix.ty;
 
-        var command = this.getDrawCall(key, struct Triangle {
+        var call = this.getDrawCall(key, struct Triangle {
             p1: struct Point {x: matrix.tx, y: matrix.ty},
             p2: struct Point {x: xa, y: yb},
             p3: struct Point {x: xc, y: yd},
         }, flexibleLayer);
-        command.addTriangle(
+        call.addTriangle(
             struct Triangle {
                 p1: struct Point {x: matrix.tx, y: matrix.ty},
                 p2: struct Point {x: xa, y: yb},
@@ -68,7 +68,7 @@ struct RenderSystem {
             },
             color
         );
-        command.addTriangle(
+        call.addTriangle(
             struct Triangle {
                 p1: struct Point {x: xc, y: yd},
                 p2: struct Point {x: xa, y: yb},
@@ -84,6 +84,6 @@ struct RenderSystem {
     }
 
     public function clear() {
-        this.commands.clear();
+        this.calls.clear();
     }
 }

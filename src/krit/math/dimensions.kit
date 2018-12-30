@@ -1,4 +1,16 @@
 abstract Dimensions[T: Numeric = Float]: Point[T] {
+    public function scale(s: Float): Ptr[Self] {
+        this.x = (this.x * s) as T;
+        this.y = (this.y * s) as T;
+        return this;
+    }
+
+    public function scale2(sx: Float, sy: Float): Ptr[Self] {
+        this.x = (this.x * sx) as T;
+        this.y = (this.y * sy) as T;
+        return this;
+    }
+
     rules {
         ($this.width) => $this.x;
         ($this.height) => $this.y;

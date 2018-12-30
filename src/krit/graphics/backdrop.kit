@@ -1,20 +1,63 @@
 struct Backdrop {
     public var position: Point = struct Point;
-    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
     public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var visible: Bool = true;
-    var repeatX: Bool;
-    var repeatY: Bool;
+    public var blendMode: BlendMode = Alpha;
+    public var smooth: Bool = true;
+    var repeatX: Bool = true;
+    var repeatY: Bool = true;
+    var scroll: Point = P(1, 1);
 
-    public static function new(source: ImageRegion, repeatX: Bool = true, repeatY: Bool = true) {
-        return struct Backdrop {
-            repeatX, repeatY
-        };
+    var region: ImageRegion;
+
+    rules {
+        ($this.width) => $this.region.rect.width;
+        ($this.height) => $this.region.rect.height;
     }
 }
 
 implement Graphic for Backdrop {
-    public function render(context: Ptr[RenderContext]): Void {}
+    public function render(render: Ptr[RenderContext]): Void {
+        render.transform = struct RenderTransform {scroll: this.scroll};
+        var scaledDimensions = struct Dimensions {x: this.width, y: this.height};
+        render.transformDimensions(
+            scaledDimensions.scale2(this.scale.fullScaleX, this.scale.fullScaleY)
+        );
+        var scaledPosition = this.position.copy();
+        render.transformPoint(scaledPosition);
+        var xi = 1;
+        var yi = 1;
+        if this.repeatX {
+            scaledPosition.x = scaledPosition.x % scaledDimensions.width;
+            if scaledPosition.x > 0 {
+                scaledPosition.x -= scaledDimensions.width;
+            }
+            xi = (ceil(render.window.width - scaledPosition.x) / scaledDimensions.width + 1) as Int;
+        }
+        if this.repeatY {
+            scaledPosition.y = scaledPosition.y % scaledDimensions.height;
+            if scaledPosition.y > 0 {
+                scaledPosition.y -= scaledDimensions.height;
+            }
+            yi = (ceil(render.window.height - scaledPosition.y) / scaledDimensions.height + 1) as Int;
+        }
+        var key = struct DrawKey {
+            image: this.region.image,
+            smooth: this.smooth,
+            blend: this.blendMode,
+        };
+        var m = struct Matrix {
+            a: scaledDimensions.width / this.width,
+            d: scaledDimensions.height / this.height,
+        };
+        for y in 0 ... yi {
+            for x in 0 ... xi {
+                m.tx = scaledPosition.x + scaledDimensions.width * x;
+                m.ty = scaledPosition.y + scaledDimensions.height * y;
+                render.addRectRaw(key, this.region.rect, m, this.color.withAlpha(this.alpha), false);
+            }
+        }
+    }
 }

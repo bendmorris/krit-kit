@@ -7,6 +7,17 @@ struct ImageRegion {
     }
 
     public static function fromImage(image: Ptr[ImageData]) {
-        return struct Self {image, rect: image.dimensions};
+        return struct Self {image, rect: Ri(0, 0, image.dimensions.width, image.dimensions.height)};
+    }
+
+    public function copy() {
+        return struct ImageRegion {image: this.image, rect: this.rect};
+    }
+
+    rules {
+        ($this.x) => $this.rect.x;
+        ($this.y) => $this.rect.y;
+        ($this.width) => $this.rect.width;
+        ($this.height) => $this.rect.height;
     }
 }

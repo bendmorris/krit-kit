@@ -25,7 +25,7 @@ struct AssetCache {
 
     public static function new(allocator: Box[Allocator]): Self using implicit allocator {
         var loaders = Map[CString, AssetLoader].new(16);
-        var assets = Map[CString, Map[CString, Shared[Void]]].new(16);
+        var assets = Map[CString, Map[CString, Shared[Void]]].new(32);
         var s = struct Self {
             assets,
             loaders,
@@ -75,6 +75,6 @@ struct AssetCache {
     }
 
     function getAssets(type: CString): Ptr[Map[CString, Shared[Void]]] {
-        return this.assets.getRef(type).unwrap();
+        return this.assets.ref(type).unwrap();
     }
 }
