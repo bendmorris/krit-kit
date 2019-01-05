@@ -1,37 +1,75 @@
+/**
+ * Text using bitmap fonts, supporting format tags to change the size, color,
+ * etc.
+ */
 struct BitmapText {
-    static var stack: GlyphRenderStack = struct GlyphRenderStack;
-    // static var formatTags: Map[CString, Array[TextOpcode]] = Self.initFormatTags();
+    static var formatTags: Map[String, FormatTagOptions] = Self.initFormatTags();
 
-    // static function initFormatTags() {
-        // var map: Map[CString, Array[TextOpcode]] = Map.new(16);
-        // //map.put("br", )
-        // return map;
-    // }
+    static function initFormatTags() {
+        var map = Map.new(32);
+        map.put(String.fromCString("br"), struct FormatTagOptions {newline: true});
+        map.put(String.fromCString("left"), struct FormatTagOptions {align: Some(LeftAlign)});
+        map.put(String.fromCString("center"), struct FormatTagOptions {align: Some(CenterAlign)});
+        map.put(String.fromCString("right"), struct FormatTagOptions {align: Some(RightAlign)});
+        return map;
+    }
 
-    public var position: Point = struct Point;
-    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
+    public static function defineFormatTag(tag: String, options: Ptr[FormatTagOptions]) {
+        Self.formatTags.put(tag, options);
+    }
+
+    public var position: Point = P();
+    public var dimensions: Dimensions[Int] = Di();
     public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var visible: Bool = true;
-    public var text: CString;
-    public var options: BitmapTextOptions;
-    var opcodes: Vector[TextOpcode];
+    public var blendMode: BlendMode = Alpha;
+    public var smooth: Bool = true;
 
-    public static function new(text: CString, options: BitmapTextOptions): Self {
-        var s = struct BitmapText {
+    public var text: CString = null;
+    public var textDimensions: Dimensions = D();
+    public var options: BitmapTextOptions;
+    var opcodes: Vector[TextOpcode] = Vector.new(16);
+    var assetContext: Ptr[AssetContext];
+    var font: Ptr[BitmapFont];
+    var rich: Bool = false;
+
+    // var imageLoader: function (Ptr[BitmapText], CString) -> Ptr[ImageRegion] = null;
+
+    public static function new(allocator: Box[Allocator], assetContext: Ptr[AssetContext], options: BitmapTextOptions): Self
+    using implicit allocator {
+        return struct BitmapText {
             options,
+            assetContext,
+            font: assetContext.getBitmapFont(options.font),
+            // images: Map.new(16),
         };
-        s.setText(text);
     }
 
+    /**
+     * Set simple text, without parsing.
+     */
     public function setText(text: CString) {
         this.text = text;
-        this.parseText();
+        this.rich = false;
+        var parser = struct TextParser;
+        parser.parseText(this, text, false);
     }
 
-    function parseText() {
-        Self.stack.clear();
+    /**
+     * Parse rich text (including format tags) and set the opcode vector.
+     */
+    public function setRichText(text: CString) {
+        this.text = text;
+        this.rich = true;
+        var parser = struct TextParser;
+        parser.parseText(this, text, true);
+    }
+
+    public function refresh() {
+        var parser = struct TextParser;
+        parser.parseText(this, this.text, this.rich);
     }
 
     rules {
@@ -39,57 +77,263 @@ struct BitmapText {
     }
 }
 
-enum AlignType {
-    LeftAlign;
-    CenterAlign;
-    RightAlign;
-}
+/**
+ * Utility structure to parse format tags from a string of text and generate a
+ * Vector of TextOpcodes.
+ */
+struct TextParser {
+    static var stack: GlyphRenderStack = struct GlyphRenderStack;
+    static var word: Vector[TextOpcode] = Vector.new(64);
 
-typedef CustomRenderFunction = function (&GlyphRenderData) -> Void;
+    var thisLineHeight: Float = 0;
+    var cursor = P();
+    var trailingWhitespace: Float = 0;
+    var wordSegment: String;
+    var wordSegmentLength: Float;
+    var wordSegmentTrailingWhitespace: Float = 0;
+    var wordLength: Float = 0;
+    var wordTrailingWhitespace: Float = 0;
+    var wordHeight: Float = 0;
+    var currentScale: Float = 1;
+    var currentAlign: AlignType = LeftAlign;
+    var newLineIndex: Int = 0;
 
-struct GlyphRenderData {
-    public var char: Ptr[Char];
-    public var position: Point;
-    public var color: Color;
-    public var alpha: Float;
-    public var size: Int;
-    public var scale: ScaleFactor;
-}
+    function parseText(txt: Ptr[BitmapText], s: CString, rich: Bool) using implicit txt {
+        txt.opcodes.clear();
+        Self.word.clear();
+        var st: Ptr[GlyphRenderStack] = Self.stack;
+        st.clear();
+        // st.font.push(txt.options.font);
+        // st.size.push(txt.options.size);
+        st.scale.push(1);
+        st.color.push(txt.color);
+        st.alpha.push(txt.alpha);
+        st.align.push(this.currentAlign = txt.options.align);
+        st.custom.push(null);
 
-struct GlyphRenderStack {
-    public var fontStack: Vector[CString] = Vector.new(4);
-    public var sizeStack: Vector[Int] = Vector.new(4);
-    public var scaleStack: Vector[Float] = Vector.new(4);
-    public var colorStack: Vector[Color] = Vector.new(4);
-    public var alphaStack: Vector[Float] = Vector.new(4);
-    public var transformStack: Vector[CustomRenderFunction] = Vector.new(4);
+        this.wordSegment = struct String {
+            data: s,
+            length: 0,
+        };
+        var tagEnd = 0;
 
-    public function clear() {
-        this.fontStack.clear();
-        this.sizeStack.clear();
-        this.scaleStack.clear();
-        this.colorStack.clear();
-        this.alphaStack.clear();
-        this.transformStack.clear();
+        txt.opcodes.push(NewLine(0, 0, txt.options.align));
+
+        while true {
+            var tag: Option[String] = None;
+            if rich {
+                // look for a tag starting at this position
+                if this.wordSegment[this.wordSegment.length] == c'<' {
+                    this.flushWord();
+                    tagEnd = 1;
+                    while this.wordSegment[tagEnd] != 0 && this.wordSegment[tagEnd] != c'>' {
+                        ++tagEnd;
+                    }
+                    var tagLength = tagEnd - 1;
+                    // treat self-closing tag as open tag
+                    if this.wordSegment[tagEnd - 1] == c'/' {
+                        --tagLength;
+                    }
+                    tag = Some(struct String {data: this.wordSegment[this.wordSegment.length + 1], length: tagLength});
+                    this.wordSegment = struct String {
+                        data: this.wordSegment.data + tagEnd + 1,
+                        length: 0,
+                    };
+                }
+            }
+            match tag {
+                Some(x) => {
+                    this.addTag(x);
+                }
+                default => {
+                    if this.wordSegment[this.wordSegment.length] == 0 {
+                        break;
+                    } else {
+                        this.wordHeight = max(this.wordHeight, txt.font.lineHeight * this.currentScale);
+                        var char = this.wordSegment[this.wordSegment.length];
+                        match char {
+                            c'\n' => {
+                                this.flushWord();
+                                this.newLine(true);
+                                this.wordSegment.data = this.wordSegment.data + 1;
+                            }
+                            default => {
+                                this.wordSegment.length++;
+                                var maybeGlyph = txt.font.getGlyph(char);
+                                match maybeGlyph {
+                                    Some(glyph) => {
+                                        this.wordSegmentLength += glyph.xAdvance * this.currentScale;
+                                        if char == c' ' {
+                                            this.wordSegmentTrailingWhitespace += glyph.xAdvance * this.currentScale;
+                                        } else {
+                                            this.wordSegmentTrailingWhitespace = 0;
+                                        }
+                                    }
+                                }
+                                if char == c' ' {
+                                    this.flushWord();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        this.flushWord();
+        this.newLine(false);
     }
-}
 
-enum TextOpcode {
-    SetColor(color: Color);
-    SetAlpha(alpha: Float);
-    SetScale(scale: Float);
-    SetFont(font: CString);
-    SetSize(size: Int);
-    TextBlock(text: Slice[Char]);
-    NewLine(width: Float, height: Float, align: AlignType);
-    // Image(image: Image, padding: Int);
-    Custom(f: CustomRenderFunction);
-    PopColor;
-    PopAlpha;
-    PopScale;
-    PopFont;
-    PopSize;
-    PopCustom;
+    function addTag(txt: Ptr[BitmapText], tagName: String) using implicit txt {
+        var close = false;
+        if tagName[0] == c'/' {
+            close = true;
+            tagName = struct String {data: tagName.data + 1, length: tagName.length - 1};
+        }
+        match BitmapText.formatTags.get(tagName) {
+            Some(tag) => {
+                match tag.color {
+                    Some(v) => if close then this.addOp(PopColor) else this.addOp(SetColor(v));
+                }
+                match tag.alpha {
+                    Some(v) => if close then this.addOp(PopAlpha) else this.addOp(SetAlpha(v));
+                }
+                match tag.scale {
+                    Some(v) => if close then this.addOp(PopScale) else this.addOp(SetScale(v));
+                }
+                match tag.align {
+                    Some(v) => {
+                        if close {
+                            this.addOp(PopAlign);
+                        } else {
+                            this.addOp(SetAlign(v));
+                        }
+                    }
+                }
+                match tag.custom {
+                    Some(v) => if close then this.addOp(PopCustom) else this.addOp(SetCustom(v));
+                }
+                if tag.newline && !close {
+                    this.addOp(NewLine(0, 0, LeftAlign));
+                }
+            }
+        }
+    }
+
+    function newLine(txt: Ptr[BitmapText], append: Bool) {
+        match txt.opcodes[this.newLineIndex] {
+            NewLine(_, _, align) => {
+                // update the size of the preceding line
+                var add = this.thisLineHeight + (if this.newLineIndex == 0 then 0 else txt.options.lineSpacing);
+                this.cursor.y += this.thisLineHeight + add;
+                txt.opcodes[this.newLineIndex] = NewLine(this.cursor.x, add, this.currentAlign);
+                txt.textDimensions.width = max(txt.textDimensions.width, this.cursor.x - this.trailingWhitespace);
+                txt.textDimensions.height = this.cursor.y;
+            }
+        }
+        if append {
+            this.thisLineHeight = txt.font.lineHeight * this.currentScale;
+            txt.opcodes.push(NewLine(0, 0, this.currentAlign));
+            this.cursor.x = this.trailingWhitespace = 0;
+            this.newLineIndex = txt.opcodes.length - 1;
+        }
+    }
+
+    function flushWordSegment(txt: Ptr[BitmapText]) {
+        if this.wordSegment.length > 0 {
+            Self.word.push(TextBlock(this.wordSegment));
+            this.wordSegment.data = this.wordSegment.data + this.wordSegment.length;
+            this.wordSegment.length = 0;
+            this.wordLength += this.wordSegmentLength;
+            this.wordTrailingWhitespace = this.wordSegmentTrailingWhitespace;
+            this.wordSegmentLength = 0;
+            this.wordSegmentTrailingWhitespace = 0;
+        }
+    }
+
+    function flushWord(txt: Ptr[BitmapText]) using implicit txt {
+        this.flushWordSegment();
+        if Self.word.length > 0 {
+            this.trailingWhitespace = this.wordTrailingWhitespace;
+            if txt.options.wordWrap && this.cursor.x > 0 && this.cursor.x - this.trailingWhitespace + this.wordLength > txt.dimensions.width {
+                this.newLine(true);
+                this.cursor.x = this.wordLength;
+            } else {
+                this.cursor.x += this.wordLength;
+            }
+            if this.cursor.x > txt.textDimensions.width {
+                txt.textDimensions.width = this.cursor.x;
+            }
+            for op in Self.word {
+                txt.opcodes.push(op);
+            }
+            Self.word.clear();
+            this.thisLineHeight = max(this.wordHeight, this.thisLineHeight);
+            this.wordLength = 0;
+            this.wordHeight = 0;
+            this.wordTrailingWhitespace = 0;
+        }
+    }
+
+    function addOp(txt: Ptr[BitmapText], op: TextOpcode) using implicit txt {
+        match op {
+            SetScale(v) => {
+                Self.stack.scale.push(this.currentScale = v);
+                Self.word.push(op);
+            }
+            PopScale => {
+                Self.stack.scale.pop();
+                this.currentScale = Self.stack.scale.unsafeLast;
+                Self.word.push(SetScale(this.currentScale));
+            }
+            SetColor(v) => {
+                Self.stack.color.push(v);
+                Self.word.push(op);
+            }
+            PopColor => {
+                Self.stack.color.pop();
+                Self.word.push(SetColor(Self.stack.color.unsafeLast));
+            }
+            SetAlpha(v) => {
+                Self.stack.alpha.push(v);
+                Self.word.push(op);
+            }
+            PopAlpha => {
+                Self.stack.alpha.pop();
+                Self.word.push(SetAlpha(Self.stack.alpha.unsafeLast));
+            }
+            SetCustom(f) => {
+                Self.stack.custom.push(f);
+                Self.word.push(op);
+            }
+            PopCustom => {
+                Self.stack.custom.pop();
+                Self.word.push(SetCustom(Self.stack.custom.unsafeLast));
+            }
+            NewLine(_, _, _) => {
+                this.flushWord();
+                this.newLine(true);
+            }
+            SetAlign(v) => {
+                this.flushWord();
+                if this.cursor.x > 0 {
+                    this.newLine(true);
+                }
+                Self.stack.align.push(this.currentAlign = v);
+            }
+            PopAlign => {
+                this.flushWord();
+                Self.stack.align.pop();
+                var v = Self.stack.align.unsafeLast;
+                if this.cursor.x > 0 {
+                    this.newLine(true);
+                }
+                this.currentAlign = v;
+            }
+            default => {
+                Self.word.push(op);
+            }
+        }
+    }
 }
 
 struct BitmapTextOptions {
@@ -97,18 +341,157 @@ struct BitmapTextOptions {
     public var size: Int = 16;
     public var align: AlignType = LeftAlign;
     public var wordWrap: Bool = false;
+    public var lineSpacing: Float = 0;
 }
 
 struct FormatTagOptions {
-    public var color: Option[Color];
-    public var alpha: Option[Float];
-    public var size: Option[Int];
-    public var scale: Option[Float];
-    public var font: Option[CString];
+    public var color: Option[Color] = None;
+    public var alpha: Option[Float] = None;
+    // public var size: Option[Int] = None;
+    public var scale: Option[Float] = None;
+    // public var font: Option[CString] = None;
+    public var align: Option[AlignType] = None;
+    public var custom: Option[CustomRenderFunction] = None;
+    public var newline: Bool = false;
+}
+
+enum AlignType {
+    LeftAlign;
+    CenterAlign;
+    RightAlign;
+
+    /**
+     * How much of the line's width should this line be offset by?
+     */
+    public function getValue(): Float {
+        match this {
+            LeftAlign => return 0;
+            CenterAlign => return 0.5;
+            RightAlign => return 1;
+        }
+    }
+}
+
+typedef CustomRenderFunction = function (&BitmapText, &GlyphRenderData) -> Void;
+
+struct GlyphRenderData {
+    public var char: Ptr[Char];
+    public var position: Point;
+    public var color: Color;
+    public var alpha: Float;
+    public var scale: ScaleFactor;
+}
+
+struct GlyphRenderStack {
+    // public var font: Vector[CString] = Vector.new(4);
+    // public var size: Vector[Int] = Vector.new(4);
+    public var scale: Vector[Float] = Vector.new(4);
+    public var color: Vector[Color] = Vector.new(4);
+    public var alpha: Vector[Float] = Vector.new(4);
+    public var align: Vector[AlignType] = Vector.new(4);
+    public var custom: Vector[CustomRenderFunction] = Vector.new(4);
+
+    public function clear() {
+        // this.font.clear();
+        // this.size.clear();
+        this.scale.clear();
+        this.color.clear();
+        this.alpha.clear();
+        this.align.clear();
+        this.custom.clear();
+    }
+}
+
+/**
+ * Commands to either change state or render during BitmapText rendering.
+ */
+enum TextOpcode {
+    SetColor(color: Color);
+    SetAlpha(alpha: Float);
+    SetScale(scale: Float);
+    // SetFont(font: CString);
+    // SetSize(size: Int);
+    SetAlign(alignType: AlignType);
+    SetCustom(f: CustomRenderFunction);
+    PopColor;
+    PopAlpha;
+    PopScale;
+    // PopFont;
+    // PopSize;
+    PopAlign;
+    PopCustom;
+    TextBlock(text: String);
+    NewLine(width: Float, height: Float, align: AlignType);
+    // Image(image: Image, padding: Int);
 }
 
 implement Graphic for BitmapText {
-    public function render(context: Ptr[RenderContext]): Void {
-
+    public function render(render: Ptr[RenderContext]): Void {
+        var color: Color = Color.White;
+        var alpha: Float = 1;
+        var baseScale: Float = (this.options.size as Float) / this.font.size;
+        var scale: ScaleFactor = struct ScaleFactor;
+        var thisLineHeight: Float = 0;
+        var cursor = P();
+        var custom: CustomRenderFunction = null;
+        var totalWidth = if this.options.wordWrap then this.dimensions.width as Float else this.textDimensions.width;
+        for op in this.opcodes {
+            match op {
+                SetColor(v) => color = v;
+                SetAlpha(v) => alpha = v;
+                SetScale(v) => scale.scale = v;
+                SetCustom(f) => {
+                    custom = f;
+                }
+                NewLine(width, height, align) => {
+                    cursor.setTo(
+                        (totalWidth - width * this.scale.fullScaleX * baseScale) * align.getValue(),
+                        cursor.y + thisLineHeight * this.scale.fullScaleY * baseScale
+                    );
+                    thisLineHeight = height;
+                }
+                TextBlock(txt) => {
+                    for char in txt {
+                        var maybeGlyph = this.font.getGlyph(char);
+                        match maybeGlyph {
+                            Some(glyph) => {
+                                var renderData = struct GlyphRenderData {
+                                    char,
+                                    color,
+                                    alpha,
+                                    scale,
+                                    position: cursor
+                                };
+                                if char == c' ' || char == c'\t' {
+                                    // it's a space; just advance the cursor and move on
+                                // TODO: escape characters
+                                } else {
+                                    if custom != null {
+                                        custom(this, renderData);
+                                    }
+                                    var matrix = struct Matrix;
+                                    matrix
+                                        .translate(glyph.offset.x, glyph.offset.y)
+                                        .scale(renderData.scale.fullScaleX * this.scale.fullScaleX * baseScale, renderData.scale.fullScaleY * this.scale.fullScaleY * baseScale)
+                                        .translate(this.position.x + renderData.position.x, this.position.y + renderData.position.y);
+                                    var image = struct ImageRegion {
+                                        image: this.font.getPage(glyph.page),
+                                        rect: glyph.rect,
+                                    };
+                                    var key = struct DrawKey {
+                                        image: image.image,
+                                        smooth: this.smooth,
+                                        blend: this.blendMode
+                                    };
+                                    render.addRect(key, image.rect, matrix, renderData.color.withAlpha(renderData.alpha), false);
+                                }
+                                cursor.x += glyph.xAdvance * renderData.scale.fullScaleX * this.scale.fullScaleX * baseScale;
+                            }
+                        }
+                    }
+                }
+                // other opcodes (e.g. the Pop variants) are removed during parsing
+            }
+        }
     }
 }

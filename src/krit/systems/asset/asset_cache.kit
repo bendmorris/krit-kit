@@ -1,3 +1,5 @@
+import kit.sys.file;
+
 /*struct AssetKey {
     public var type: CString;
     public var id: CString;
@@ -14,10 +16,21 @@ typedef AssetDisposeFunction = function (Box[Allocator], Ptr[Void]) -> Void;
 
 struct AssetLoader {
     public var load: AssetLoadFunction;
-    public var dispose: AssetDisposeFunction;
+    public var dispose: AssetDisposeFunction = null;
 }
 
 struct AssetCache {
+    static function loadText(allocator: Box[Allocator], id: CString): Shared[Void] {
+        // FIXME: asset IO drivers
+        var f = File.read(id);
+        var len = f.getSize();
+        var s = Shared.alloc(len + 1);
+        f.readBytes(s, len);
+        s[len] = 0;
+        return s as Shared[Void];
+    }
+    static const TEXT_TYPE: CString = "s";
+
     // public var assets: Map[AssetKey, Ptr[Void]];
     public var assets: Map[CString, Map[CString, Shared[Void]]];
     public var loaders: Map[CString, AssetLoader];
@@ -31,6 +44,7 @@ struct AssetCache {
             loaders,
             allocator
         };
+        s.register(Self.TEXT_TYPE, struct AssetLoader {load: Self.loadText});
         s.register(ImageLoader.TYPE, struct AssetLoader {load: ImageLoader.load, dispose: ImageLoader.dispose});
         s.register(BitmapFont.TYPE, struct AssetLoader {load: BitmapFont.load, dispose: BitmapFont.dispose});
         return s;
@@ -67,7 +81,9 @@ struct AssetCache {
             Some(x) => using implicit this.allocator {
                 var shouldFree = x.decrement();
                 if shouldFree {
-                    loader.dispose(id);
+                    if loader.dispose != null {
+                        loader.dispose(id);
+                    }
                     x.free();
                 }
             }

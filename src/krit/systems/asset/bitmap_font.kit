@@ -2,29 +2,32 @@ import kit.sys.file;
 
 include "expat.h" => "expat";
 
+// FIXME: Char won't support UTF8
+typedef GlyphCharType = Char;
+
 struct GlyphData {
     public var page: Int = 0;
-    public var glyph: CString = null;
-    public var rect: Rectangle;
+    public var glyph: GlyphCharType = 0;
+    public var rect: Rectangle[Int];
     public var offset: Point[Int];
-    public var xAdvance: Int;
+    public var xAdvance: Int = 0;
 }
 
 struct BitmapFont {
     public static const TYPE = "bmfont";
 
-    public var size: Int;
-    public var lineHeight: Int;
-    public var pages: Vector[ImageRegion];
-    public var glyphData: Map[CString, GlyphData];
+    public var size: Int = 0;
+    public var lineHeight: Int = 0;
+    public var pages: Vector[ImageData];
+    public var glyphData: Map[GlyphCharType, GlyphData];
     public var allocator: Box[Allocator];
 
     public static function load(allocator: Box[Allocator], path: CString): Shared[Void]
     using implicit allocator {
         var shared = Shared[BitmapFont].alloc(sizeof BitmapFont);
         (*shared) = struct BitmapFont {
-            pages: Vector[ImageRegion].new(4),
-            glyphData: Map[CString, GlyphData].new(256),
+            pages: Vector.new(4),
+            glyphData: Map.new(256),
             allocator
         };
         var userData: Ptr[BitmapFont] = shared;
@@ -46,7 +49,7 @@ struct BitmapFont {
                 break;
             }
             if XML_Parse(parser, buf, readLength, if readLength < 1024 then 1 else 0) == XML_STATUS_ERROR {
-                panic("fail!");
+                panic("failed to parse bitmap font XML!");
             }
         } while true;
         XML_ParserFree(parser);
@@ -65,9 +68,7 @@ struct BitmapFont {
                         var key = *attr;
                         var value = *(attr + 1);
                         match key {
-                            "size" => {
-                                font.size = atoi(value);
-                            }
+                            "size" => font.size = atoi(value);
                         }
                     }
                     attr = attr + 2;
@@ -80,9 +81,7 @@ struct BitmapFont {
                         var key = *attr;
                         var value = *(attr + 1);
                         match key {
-                            "size" => {
-                                font.size = atoi(value);
-                            }
+                            "lineHeight" => font.lineHeight = atoi(value);
                         }
                     }
                     attr = attr + 2;
@@ -98,7 +97,7 @@ struct BitmapFont {
                             "file" => {
                                 using implicit font.allocator {
                                     var asset = ImageLoader.load(value);
-                                    font.pages.push(ImageRegion.fromImage(asset));
+                                    font.pages.push(asset as Ptr[ImageData]);
                                 }
                             }
                         }
@@ -142,17 +141,32 @@ struct BitmapFont {
                             }
                             "letter" => {
                                 using implicit font.allocator {
-                                    glyphData.glyph = (value as CString).copy();
+                                    match value {
+                                        "space" => glyphData.glyph = c' ';
+                                        "&quot;" => glyphData.glyph = c'"';
+                                        "&amp;" => glyphData.glyph = c'&';
+                                        "&gt;" => glyphData.glyph = c'>';
+                                        "&lt;" => glyphData.glyph = c'<';
+                                        default => glyphData.glyph = value[0];
+                                    }
                                 }
                             }
-                        }
-                        if glyphData.glyph != null {
-                            font.glyphData.put(glyphData.glyph, glyphData);
                         }
                     }
                     attr = attr + 2;
                 }
+                if glyphData.glyph != 0 {
+                    font.glyphData.put(glyphData.glyph, glyphData);
+                }
             }
         }
+    }
+
+    public function getGlyph(c: Ptr[GlyphCharType]): Option[Ptr[GlyphData]] {
+        return this.glyphData.ref(c);
+    }
+
+    public function getPage(i: Int): Ptr[ImageData] {
+        return this.pages[i];
     }
 }
