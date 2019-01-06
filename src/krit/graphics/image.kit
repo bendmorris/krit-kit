@@ -24,6 +24,9 @@ struct Image {
 
 implement Graphic for Image {
     public function render(render: Ptr[RenderContext]): Void {
+        if !this.visible {
+            return;
+        }
         render.transform = struct RenderTransform {scroll: this.scroll};
         var matrix = struct Matrix {tx: -this.origin.x, ty: -this.origin.y};
         matrix

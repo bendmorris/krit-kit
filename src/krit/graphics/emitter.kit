@@ -1,16 +1,26 @@
 struct Emitter {
     public var position: Point = struct Point;
-    public var dimensions: Dimensions[Int] = struct Dimensions[Int];
+    public var origin: Point = struct Point;
     public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var visible: Bool = true;
+    public var blendMode: BlendMode = Alpha;
+    public var smooth: Bool = true;
+
+    var source: ImageRegion;
 
     public static function new(source: ImageRegion) {
-        return struct Emitter;
+        return struct Emitter {source};
     }
 }
 
 implement Graphic for Emitter {
-    public function render(context: Ptr[RenderContext]): Void {}
+    public function render(render: Ptr[RenderContext]): Void {
+
+    }
+
+    public function update(update: Ptr[UpdateContext]): Void {
+
+    }
 }

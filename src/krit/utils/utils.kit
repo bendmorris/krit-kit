@@ -1,0 +1,3 @@
+function clamp[T: Numeric](val: T, min: T, max: T): T {
+    return if val < min then min else if val > max then max else val;
+}

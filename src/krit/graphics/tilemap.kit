@@ -1,17 +1,102 @@
 struct TileMap {
     public var position: Point = struct Point;
     public var dimensions: Dimensions[Int] = struct Dimensions[Int];
-    public var tileDimensions: Dimensions[Int] = struct Dimensions[Int];
     public var scale: ScaleFactor = struct ScaleFactor;
     public var color: Color = Color.White;
     public var alpha: Float = 1;
     public var visible: Bool = true;
+    public var blendMode: BlendMode = Alpha;
+    public var smooth: Bool = true;
 
-    public static function new(source: ImageRegion) {
-        return struct TileMap;
+    public var tileData: Array[Int16];
+    public var properties: TileMapProperties;
+    var region: ImageRegion;
+
+    public static function new(allocator: Box[Allocator], source: ImageRegion, properties: Ptr[TileMapProperties]): Self
+    using implicit allocator {
+        var area = properties.sizeInTiles.area();
+        var tileData = Array.new(area);
+        for i in 0 ... area {
+            tileData[i] = -1;
+        }
+        return struct TileMap {
+            region: source,
+            tileData,
+            properties,
+            dimensions: Di(properties.sizeInTiles.width * properties.tileDimensions.width, properties.sizeInTiles.height * properties.tileDimensions.height),
+        };
+    }
+
+    public function clearTile(x: Int, y: Int) {
+        this.setTile(x, y, -1);
+    }
+
+    public function setTile(x: Int, y: Int, value: Int16) {
+        this.tileData[this.tileIndex(x, y)] = value;
+    }
+
+    function tileIndex(x: Int, y: Int): Int {
+        return y * this.properties.sizeInTiles.width + x;
+    }
+}
+
+struct TileMapProperties {
+    public var tileDimensions: Dimensions[Int] = undefined;
+    public var sizeInTiles: Dimensions[Int] = undefined;
+    public var tilePadding: Dimensions[Int] = Di(0, 0);
+
+    public function fullTileWidth() {
+        return this.tileDimensions.width + this.tilePadding.width * 2;
+    }
+
+    public function fullTileHeight() {
+        return this.tileDimensions.height + this.tilePadding.height * 2;
     }
 }
 
 implement Graphic for TileMap {
-    public function render(context: Ptr[RenderContext]): Void {}
+    public function render(render: Ptr[RenderContext]): Void {
+        if !this.visible {
+            return;
+        }
+        var tileWidth = this.properties.tileDimensions.width;
+        var tileHeight = this.properties.tileDimensions.height;
+        var scaledDimensions = struct Dimensions {x: tileWidth, y: tileHeight};
+        render.transformDimensions(
+            scaledDimensions.scale2(this.scale.fullScaleX, this.scale.fullScaleY)
+        );
+        var scaledPosition = this.position.copy();
+        render.transformPoint(scaledPosition);
+        var startX = max(0, floor(-scaledPosition.x)) as Int;
+        var startY = max(0, floor(-scaledPosition.y)) as Int;
+        var destX = min(startX + 1 + ceil(render.window.width / scaledDimensions.width), this.properties.sizeInTiles.width) as Int;
+        var destY = min(startY + 1 + ceil(render.window.height / scaledDimensions.height), this.properties.sizeInTiles.height) as Int;
+
+        var key = struct DrawKey {
+            image: this.region.image,
+            smooth: this.smooth,
+            blend: this.blendMode,
+        };
+        var m = struct Matrix {
+            a: scaledDimensions.width / tileWidth,
+            d: scaledDimensions.height / tileHeight,
+        };
+        for y in startY ... destY {
+            for x in startX ... destX {
+                var tile = this.tileData[this.tileIndex(x, y)];
+                if tile >= 0 {
+                    var tx = tile % (this.region.width / (this.properties.fullTileWidth()));
+                    var ty = floor(tile / (this.region.width / (this.properties.fullTileHeight()))) as Int;
+                    m.tx = scaledPosition.x + scaledDimensions.width * x;
+                    m.ty = scaledPosition.y + scaledDimensions.height * y;
+                    var rect = Ri(
+                        this.region.rect.x + tx * (tileWidth + this.properties.tilePadding.width * 2) + this.properties.tilePadding.width,
+                        this.region.rect.y + ty * (tileHeight + this.properties.tilePadding.height * 2) + this.properties.tilePadding.height,
+                        tileWidth, tileHeight
+                    );
+                    render.addRectRaw(key, rect, m, this.color.withAlpha(this.alpha), false);
+                }
+            }
+        }
+    }
 }

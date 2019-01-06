@@ -1,0 +1,11 @@
+enum Measurement {
+    Absolute(v: Float);
+    Percent(v: Float);
+
+    public function measure(max: Float): Float {
+        match this {
+            Absolute(v) => return v;
+            Percent(v) => return v * max;
+        }
+    }
+}

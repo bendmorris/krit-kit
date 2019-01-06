@@ -445,7 +445,7 @@ implement Graphic for BitmapText {
                 }
                 NewLine(width, height, align) => {
                     cursor.setTo(
-                        (totalWidth - width * this.scale.fullScaleX * baseScale) * align.getValue(),
+                        (totalWidth - width) * this.scale.fullScaleX * baseScale * align.getValue(),
                         cursor.y + thisLineHeight * this.scale.fullScaleY * baseScale
                     );
                     thisLineHeight = height;

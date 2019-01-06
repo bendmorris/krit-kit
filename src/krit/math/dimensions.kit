@@ -11,6 +11,10 @@ abstract Dimensions[T: Numeric = Float]: Point[T] {
         return this;
     }
 
+    public function area(): T {
+        return this.x * this.y;
+    }
+
     rules {
         ($this.width) => $this.x;
         ($this.height) => $this.y;

@@ -1,0 +1,11 @@
+struct Bounds {
+    public var min: Measurement;
+    public var max: Measurement;
+
+    public function clamp(m: Measurement, v: Float) {
+        var value = m.measure(v);
+        var min = this.min.measure(v);
+        var max = this.max.measure(v);
+        return clamp(value, min, max);
+    }
+}
