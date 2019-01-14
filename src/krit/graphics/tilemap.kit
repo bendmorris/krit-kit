@@ -67,8 +67,8 @@ implement Graphic for TileMap {
         );
         var scaledPosition = this.position.copy();
         render.transformPoint(scaledPosition);
-        var startX = max(0, floor(-scaledPosition.x)) as Int;
-        var startY = max(0, floor(-scaledPosition.y)) as Int;
+        var startX = max(0, floor(-scaledPosition.x / scaledDimensions.width)) as Int;
+        var startY = max(0, floor(-scaledPosition.y / scaledDimensions.height)) as Int;
         var destX = min(startX + 1 + ceil(render.window.width / scaledDimensions.width), this.properties.sizeInTiles.width) as Int;
         var destY = min(startY + 1 + ceil(render.window.height / scaledDimensions.height), this.properties.sizeInTiles.height) as Int;
 

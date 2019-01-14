@@ -1,18 +1,28 @@
 struct AssetContext {
     public var cache: Ptr[AssetCache];
-    public var assets: Vector[(CString, CString)];
+    var assets: Map[CString, Map[CString, Ptr[Void]]];
 
     public static function new(allocator: Box[Allocator], cache: Ptr[AssetCache]): Self {
         return struct Self {
             cache,
-            assets: Vector[(CString, CString)].new(64),
+            assets: Map.new(16),
         };
     }
 
     public function get(type: CString, id: CString): Ptr[Void] {
-        var result = this.cache.get(type, id);
-        this.assets.push((type, id));
-        return result;
+        if !this.assets.exists(type) {
+            this.assets[type] = Map.new(64);
+        }
+        match this.assets[type].get(id) {
+            Some(x) => {
+                return x;
+            }
+            None => {
+                var result = this.cache.get(type, id);
+                this.assets[type].put(id, result);
+                return result;
+            }
+        }
     }
 
     public function getImage(id: CString): Ptr[ImageData] {
@@ -24,11 +34,10 @@ struct AssetContext {
     }
 
     public function dispose() {
-        for entry in this.assets {
-            var type: CString;
-            var id: CString;
-            (type, id) = entry;
-            this.cache.release(type, id);
+        for type in this.assets {
+            for id in this.assets[type] {
+                this.cache.release(type, id);
+            }
         }
         this.assets.free();
     }

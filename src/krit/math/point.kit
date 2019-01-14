@@ -13,6 +13,9 @@ struct Point[T: Numeric = Float] {
         ($this -= $other) => $this.subtract($other);
         ($this + $other) => $this.copy().add($other);
         ($this - $other) => $this.copy().subtract($other);
+
+        ($this == $other) => $this.x == $other.x && $this.y == $other.y;
+        ($this != $other) => !($this == $other);
     }
 
     public function setTo(x: T, y: T): Ptr[Self] {
