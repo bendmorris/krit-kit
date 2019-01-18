@@ -5,6 +5,7 @@ struct RenderTransform {
 struct RenderContext {
     public var renderer: Ptr[Renderer];
     public var renderSystem: Ptr[RenderSystem];
+    public var engine: Ptr[Engine];
     public var window: Ptr[Window];
     public var camera: Ptr[Camera] = null;
     public var offset: Point = struct Point;
@@ -14,6 +15,7 @@ struct RenderContext {
         return struct RenderContext {
             renderer: this.renderer,
             renderSystem: this.renderSystem,
+            engine: this.engine,
             window: this.window,
             camera: this.camera,
             offset: this.offset,

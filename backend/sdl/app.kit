@@ -10,14 +10,14 @@ struct App {
 
     public function init(options: Ptr[KritOptions]) {
         this.window = Window.new(options.title, options.width, options.height);
-        this.engine = Engine.new(options.fps, options.fixedFrameRate);
+        this.engine = struct Engine {fps: options.fps};
         this.renderer = Renderer.new();
         this.running = false;
     }
 
     public function run() {
         this.running = true;
-        var frameStart = 0;
+        var frameStart = time();
         var frameDelta: Double = 1_f64 / this.engine.fps;
         var update = struct UpdateContext {
             engine: this.engine,
@@ -25,19 +25,24 @@ struct App {
             asset: this.engine.asset,
         };
         var render = struct RenderContext {
+            engine: this.engine,
             window: this.window,
             renderer: this.renderer,
             renderSystem: this.renderer.renderSystem,
         };
-        // var frameCount: Int = 0;
+        var frameCount: Float = 0;
         while this.running {
+            do {
+                update.elapsed = time() - frameStart;
+            } while update.elapsed < frameDelta;
+            frameCount += update.elapsed / frameDelta;
+            update.frameCount = frameCount as Int;
+            frameCount = frameCount % 1_i;
             frameStart = time();
             this.handleEvents(update);
             this.engine.update(update);
             this.engine.render(render);
-            do {
-                update.elapsed = time() - frameStart;
-            } while update.elapsed < frameDelta;
+
             // if ++frameCount % 10 == 0 {
                 // printf("%.4f FPS\n", 1_f64 / update.elapsed);
             // }

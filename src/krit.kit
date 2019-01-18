@@ -12,7 +12,6 @@ struct KritOptions {
     public var width: Int = 320;
     public var height: Int = 240;
     public var fps: Int = 60;
-    public var fixedFrameRate: Bool = true;
 
     public function setSize(x: Int, y: Int) {
         this.width = x;
@@ -25,9 +24,8 @@ struct KritOptions {
         return &this;
     }
 
-    public function setFrameRate(f: Int, fixed: Bool) {
+    public function setFrameRate(f: Int) {
         this.fps = f;
-        this.fixedFrameRate = fixed;
         return &this;
     }
 }

@@ -41,13 +41,7 @@ struct InputContext {
         // trigger any ongoing or finished actions
         for action in this.actionStates {
             var active = this.active.exists(action);
-            if active {
-                if this.activeMappings.exists(action) {
-                    actionContext.action = action;
-                    actionContext.level = this.active[action];
-                    this.activeMappings[action].invoke(actionContext, context);
-                }
-            } else {
+            if !active {
                 if this.finishMappings.exists(action) {
                     actionContext.action = action;
                     actionContext.level = union LevelData {active: false};
@@ -58,17 +52,18 @@ struct InputContext {
         }
         // trigger any new actions
         for action in this.active {
-            if !this.actionStates.exists(action) {
+            if this.actionStates.exists(action) {
+                if this.activeMappings.exists(action) {
+                    actionContext.action = action;
+                    actionContext.level = this.active[action];
+                    this.activeMappings[action].invoke(actionContext, context);
+                }
+            } else {
                 this.actionStates.put(action, true);
                 if this.startMappings.exists(action) {
                     actionContext.action = action;
                     actionContext.level = this.active[action];
                     this.startMappings[action].invoke(actionContext, context);
-                }
-                if this.activeMappings.exists(action) {
-                    actionContext.action = action;
-                    actionContext.level = this.active[action];
-                    this.activeMappings[action].invoke(actionContext, context);
                 }
             }
         }

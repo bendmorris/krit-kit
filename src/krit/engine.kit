@@ -1,13 +1,4 @@
 struct Engine {
-    public static function new(fps: Int, fixedFrameRate: Bool): Engine {
-        var scenes = Vector.new(8);
-        return struct Engine {
-            scenes,
-            fps,
-            fixedFrameRate
-        };
-    }
-
     public var paused: Bool = false;
     public var fps: Int;
     public var fixedFrameRate: Bool;
@@ -17,6 +8,8 @@ struct Engine {
 
     public var onRender: Signal1[Ptr[RenderContext]] = null;
     public var postRender: Signal1[Ptr[RenderContext]] = null;
+
+    public var userData: Ptr[Void] = null;
 
     // global context
     public var input: InputContext = struct InputContext;

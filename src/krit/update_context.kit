@@ -1,5 +1,6 @@
 struct UpdateContext {
     public var elapsed: Double = 0;
+    public var frameCount: Int = 0;
     public var engine: Ptr[Engine];
     public var window: Ptr[Window];
     public var scene: Ptr[Scene];
@@ -8,9 +9,11 @@ struct UpdateContext {
     public function copy(): Self {
         return struct UpdateContext {
             elapsed: this.elapsed,
+            frameCount: this.frameCount,
             engine: this.engine,
             window: this.window,
             scene: this.scene,
+            asset: this.asset,
         };
     }
 }

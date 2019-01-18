@@ -2,4 +2,16 @@ struct Triangle[N: Numeric = Float] {
     public var p1: Point = struct Point;
     public var p2: Point = struct Point;
     public var p3: Point = struct Point;
+
+    public function scale(s: Float) {
+        this.p1.scale(s);
+        this.p2.scale(s);
+        this.p3.scale(s);
+    }
+
+    public function scale2(sx: Float, sy: Float) {
+        this.p1.scale2(sx, sy);
+        this.p2.scale2(sx, sy);
+        this.p3.scale2(sx, sy);
+    }
 }

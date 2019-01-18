@@ -4,6 +4,7 @@ struct Camera {
     public var scaleMode: Box[CameraScaleMode] = empty;
     public var scale: ScaleFactor = struct ScaleFactor;
     public var pixelSnapping: Bool = false;
+    public var userData: Ptr[Void] = null;
 
     public function transformPoint(transform: Ptr[RenderTransform], p: Ptr[Point]): Ptr[Point] {
         var position = this.position.copy();

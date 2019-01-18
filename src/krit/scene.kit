@@ -13,6 +13,7 @@ struct Scene {
     public var postRender: Signal1[Ptr[RenderContext]] = null;
 
     public var entities: Vector[Ptr[Entity]] = Vector.new(0x100);
+    public var userData: Ptr[Void] = null;
 
     // scene-specific context
     public var input: InputContext = struct InputContext;
