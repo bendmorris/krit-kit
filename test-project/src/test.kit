@@ -35,6 +35,11 @@ function addBunnies(action: &ActionContext, update: &UpdateContext) {
     spawnBunnies(update.scene, 250);
 }
 
+function shakeText(txt: &BitmapText, render: &GlyphRenderData) {
+    render.position.x += (random() - 0.5) * 2;
+    render.position.y += (random() - 0.5) * 2;
+}
+
 function spawnBunnies(scene: Ptr[Scene], n: Int) {
     bunnies += n;
     printf("bunnies: %i\n", bunnies);
@@ -50,7 +55,7 @@ function spawnBunnies(scene: Ptr[Scene], n: Int) {
         (*image) = struct Image {region: ImageRegion.fromImage(asset)};
         image.centerOrigin();
         image.angle = PI * 2 * random();
-        image.position.setTo((640 + 256) * random(), (480 + 256) * random());
+        image.position.setTo(512 * random(), 512 * random());
         image.scale.scale = 0.5 + random();
         image.alpha = random() as Float;
         image.color = Color.fromRgb(random(), random(), random());
@@ -66,16 +71,16 @@ function spawnBunnies(scene: Ptr[Scene], n: Int) {
     }
 }
 
-function drawLine(c: &RenderContext) {
+function drawBox(c: &RenderContext) {
     var d = struct DrawContext {context: c, lineThickness: 20, color: 0xff0000, alpha: 0.5};
-    d.line(P(0, 0), P(128, 64));
-    d.line(P(128, 64), P(256, 0));
-    d.rectFilled(R(256, 256, 64, 64));
-    d.setColor(0x0000ff, 0.5);
-    d.rect(R(256, 256, 64, 64));
-    d.circle(P(128, 128), 32, 32);
-    d.circleFilled(P(128, 256), 32, 32);
-    d.arc(P(192, 64), 32, 0, PI*1.5, 32);
+    // d.line(P(0, 0), P(128, 64));
+    // d.line(P(128, 64), P(256, 0));
+    // d.rectFilled(R(256, 256, 64, 64));
+    // d.setColor(0x0000ff, 0.5);
+    d.rect(R(0, 0, 512, 512));
+    // d.circle(P(128, 128), 32, 32);
+    // d.circleFilled(P(128, 256), 32, 32);
+    // d.arc(P(192, 64), 32, 0, PI*1.5, 32);
 }
 
 function main() {
@@ -90,7 +95,8 @@ function main() {
 
     var scene = Scene.new();
     scene.camera.scaleMode = DefaultStretchScaleMode;
-    scene.camera.dimensions.setTo(1920, 1080);
+    // scene.camera.dimensions.setTo(1920, 1080);
+    scene.camera.dimensions.setTo(1440, 810);
     scene.bgColor = 0x00d4aa;
     // scene.bgColor = 0xaaccff;
     app.engine.pushScene(scene);
@@ -112,27 +118,11 @@ function main() {
     scene.input.on("scroll_down", scrollDown);
     scene.input.onStart("click", addBunnies);
 
-    var font = BitmapFont.load("test-project/assets/fonts/coiny.84.fnt");
-
     var cache = AssetCache.new();
     var context = AssetContext.new(cache);
     // var asset = context.getImage("hills.png");
     var asset = context.getImage("trees.png");
     var asset2 = context.getImage("light.png");
-    var asset3 = context.getImage("swirl.png");
-
-    var baseBg = struct Backdrop {
-        region: ImageRegion.fromImage(asset3),
-        scroll: P(0.1, 0),
-        repeatX: true,
-        repeatY: true,
-        blendMode: BlendScreen,
-        color: scene.bgColor,
-        alpha: 0.25,
-    };
-    var imgE = struct Entity;
-    imgE.setGraphic(baseBg);
-    scene.entities.push(imgE);
 
     var backdrop = struct Backdrop {
         region: struct ImageRegion {image: asset, rect: Ri(0, 1536, 2048, 512)},
@@ -220,16 +210,88 @@ function main() {
     entity4.setGraphic(backdrop4);
     scene.entities.push(entity4);
 
-    var ninesliceAsset = context.getImage("button.png");
-    var nineslice = NineSlice.new(ImageRegion.fromImage(ninesliceAsset), 32, 32, 32, 32);
-    nineslice.dimensions.width = 256;
-    nineslice.dimensions.height = 128;
-    nineslice.color = 0xff8080;
-    var ninesliceE = struct Entity;
-    ninesliceE.setGraphic(nineslice);
-    scene.entities.push(ninesliceE);
+    // var ninesliceAsset = context.getImage("button.png");
+    // var nineslice = NineSlice.new(ImageRegion.fromImage(ninesliceAsset), 32, 32, 32, 32);
+    // nineslice.dimensions.width = 256;
+    // nineslice.dimensions.height = 128;
+    // nineslice.color = 0xff8080;
+    // var ninesliceE = struct Entity;
+    // ninesliceE.setGraphic(nineslice);
+    // scene.entities.push(ninesliceE);
 
-    // app.engine.postRender = drawLine;
+    var bmt = BitmapText.new(context, struct BitmapTextOptions {
+        font: "test-project/assets/fonts/coiny.42.fnt",
+        size: 72,
+        lineSpacing: 128,
+        align: LeftAlign,
+    });
+    bmt.setText("hi there\nthis is some text");
+    bmt.scale.scale = 0.5;
+    var bmtE = struct Entity;
+    bmtE.setGraphic(bmt);
+    scene.entities.push(bmtE);
+
+    var bmt3 = BitmapText.new(context, struct BitmapTextOptions {
+        font: "test-project/assets/fonts/coiny.42.fnt",
+        size: 72,
+        lineSpacing: 128,
+        align: RightAlign,
+    });
+    bmt3.setText("hi there\nthis is some text");
+    bmt3.scale.scale = 0.75;
+    var bmt3E = struct Entity;
+    bmt3E.setGraphic(bmt3);
+    scene.entities.push(bmt3E);
+
+    var bmt2 = BitmapText.new(context, struct BitmapTextOptions {
+        font: "test-project/assets/fonts/coiny.42.fnt",
+        size: 72,
+        wordWrap: true,
+        align: CenterAlign,
+    });
+    bmt2.dimensions.width = 512;
+    bmt2.position.y = 256;
+    bmt2.scale.scale = 0.5;
+    bmt2.setRichText("this is, hopefully, some word wrapped text");
+    var bmt2E = struct Entity;
+    bmt2E.setGraphic(bmt2);
+    scene.entities.push(bmt2E);
+
+    BitmapText.defineFormatTag("shake" as String, struct FormatTagOptions {custom: Some(shakeText)});
+    BitmapText.defineFormatTag("red" as String, struct FormatTagOptions {color: Some(0xff8080)});
+    var bmt4 = BitmapText.new(context, struct BitmapTextOptions {
+        font: "test-project/assets/fonts/coiny.42.fnt",
+        size: 48,
+        wordWrap: true,
+        align: CenterAlign,
+    });
+    bmt4.dimensions.width = 512;
+    bmt4.position.x = 512;
+    bmt4.position.y = 256;
+    bmt4.scale.scale = 0.5;
+    bmt4.setRichText("here is<br/>&lt;some&gt;<br/><left><red>formatted</red></left>text text text<right>that <shake>works</shake>!</right>");
+    var bmt4E = struct Entity;
+    bmt4E.setGraphic(bmt4);
+    scene.entities.push(bmt4E);
+
+    var tilemapImg = context.getImage("../mouse/data/skills/nodes.png");
+    var tilemap = TileMap.new(ImageRegion.fromImage(tilemapImg), struct TileMapProperties {
+        tileDimensions: Di(16, 16),
+        sizeInTiles: Di(4, 4),
+    });
+    tilemap.position.x = 256;
+    tilemap.setTile(0, 0, 7);
+    tilemap.setTile(1, 2, 2);
+    tilemap.setTile(2, 2, 2);
+    tilemap.setTile(1, 3, 3);
+    tilemap.setTile(3, 3, 0);
+    tilemap.scale.setTo(4, 4);
+    var tE = struct Entity;
+    tE.setGraphic(tilemap);
+    scene.entities.push(tE);
+
+    scene.postRender = drawBox;
+    // app.engine.postRender = drawBox;
 
     app.run();
 }

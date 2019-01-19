@@ -53,6 +53,7 @@ struct BitmapText {
     public function setText(text: CString) {
         this.text = text;
         this.rich = false;
+        this.textDimensions.setTo(0, 0);
         var parser = struct TextParser;
         parser.parseText(this, text, false);
     }
@@ -63,6 +64,7 @@ struct BitmapText {
     public function setRichText(text: CString) {
         this.text = text;
         this.rich = true;
+        this.textDimensions.setTo(0, 0);
         var parser = struct TextParser;
         parser.parseText(this, text, true);
     }
@@ -70,6 +72,10 @@ struct BitmapText {
     public function refresh() {
         var parser = struct TextParser;
         parser.parseText(this, this.text, this.rich);
+    }
+
+    public function getBaseScale(): Float {
+        return (this.options.size as Float) / this.font.size;
     }
 
     rules {
@@ -427,8 +433,8 @@ enum TextOpcode {
 
 implement Graphic for BitmapText {
     public function render(render: Ptr[RenderContext]): Void {
-        var color: Color = Color.White;
-        var alpha: Float = 1;
+        var color: Color = this.color;
+        var alpha: Float = this.alpha;
         var baseScale: Float = (this.options.size as Float) / this.font.size;
         var scale: ScaleFactor = struct ScaleFactor;
         var thisLineHeight: Float = 0;
