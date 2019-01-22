@@ -1,7 +1,4 @@
 struct Scene {
-    static var toAdd: Vector[(Ptr[Scene], Entity)] = Vector.new(256);
-    static var toRemove: Vector[(Ptr[Scene], &Entity)] = Vector.new(256);
-
     public var bgColor: Color = Color.Black;
     public var bgAlpha: Float = 1;
     public var camera: Camera = struct Camera;
@@ -12,15 +9,12 @@ struct Scene {
     public var onRender: Signal1[Ptr[RenderContext]] = null;
     public var postRender: Signal1[Ptr[RenderContext]] = null;
 
-    public var entities: Vector[Ptr[Entity]] = Vector.new(0x100);
+    public var graphics: Vector[Box[Graphic]] = Vector.new(0x100);
     public var userData: Ptr[Void] = null;
 
     // scene-specific context
     public var input: InputContext = struct InputContext;
     public var asset: AssetContext = struct AssetContext;
-
-    var layerList: Vector[Int] = Vector.new(16);
-    var layers: Map[Int, Vector[Ptr[Entity]]] = Map.new(16);
 
     var allocator: Box[Allocator];
 
@@ -31,52 +25,37 @@ struct Scene {
     }
 
     public function destroy() using implicit this.allocator {
-        this.entities.free();
-        this.layerList.free();
-        // TODO: free vectors in layers
-        this.layers.free();
+        this.graphics.free();
     }
 
     public function update(context: Ptr[UpdateContext]) using implicit context {
         this.input.update(context);
         this.camera.update(context);
         this.onUpdate.invoke();
-        for e in this.entities {
-            if e.active {
-                e.update();
-            }
+        for g in this.graphics {
+            g.update();
         }
         this.postUpdate.invoke();
     }
 
-    public function add(entity: Entity) {
-        Self.toAdd.push((&this, entity));
-    }
-
-    public function remove(entity: Entity) {
-        Self.toRemove.push((&this, &entity));
-    }
-
     public function render(context: Ptr[RenderContext]) {
-        var childContext = context.copy();
-        childContext.camera = this.camera;
-        using implicit childContext {
-            if this.bgAlpha > 0 {
-                var key = struct DrawKey;
-                context.renderSystem.addRect(key,
-                    struct Rectangle[Int] {
-                        point: struct Point[Int],
-                        dimensions: struct Dimensions[Int] {x: context.window.width, y: context.window.height},
-                    },
-                    struct Matrix,
-                    this.bgColor.withAlpha(this.bgAlpha), false
-                );
-            }
-            this.onRender.invoke();
-            for entity in this.entities {
-                entity.render();
-            }
-            this.postRender.invoke();
+        if this.bgAlpha > 0 {
+            var key = struct DrawKey;
+            context.renderSystem.addRect(key,
+                struct Rectangle[Int] {
+                    point: struct Point[Int],
+                    dimensions: struct Dimensions[Int] {x: context.window.width, y: context.window.height},
+                },
+                struct Matrix,
+                this.bgColor.withAlpha(this.bgAlpha), false
+            );
         }
+        context.camera = this.camera;
+        this.onRender.invoke(context);
+        for g in this.graphics {
+            var render = context.copy();
+            g.render(render);
+        }
+        this.postRender.invoke(context);
     }
 }

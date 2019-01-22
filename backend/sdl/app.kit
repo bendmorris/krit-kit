@@ -7,12 +7,14 @@ struct App {
     public var renderer: Renderer;
 
     var running: Bool;
+    var maxElapsed: Float;
 
     public function init(options: Ptr[KritOptions]) {
         this.window = Window.new(options.title, options.width, options.height);
         this.engine = struct Engine {fps: options.fps};
         this.renderer = Renderer.new();
         this.running = false;
+        this.maxElapsed = options.maxElapsed;
     }
 
     public function run() {
@@ -35,6 +37,9 @@ struct App {
             do {
                 update.elapsed = time() - frameStart;
             } while update.elapsed < frameDelta;
+            if update.elapsed > this.maxElapsed {
+                update.elapsed = this.maxElapsed;
+            }
             frameCount += update.elapsed / frameDelta;
             update.frameCount = frameCount as Int;
             frameCount = frameCount % 1_i;
