@@ -9,10 +9,11 @@ struct App {
     var running: Bool;
     var maxElapsed: Float;
 
-    public function init(options: Ptr[KritOptions]) {
-        this.window = Window.new(options.title, options.width, options.height);
+    public function init(allocator: Box[Allocator], options: Ptr[KritOptions]) using implicit allocator {
+        this.window.init(options.title, options.width, options.height);
         this.engine = struct Engine {fps: options.fps};
-        this.renderer = Renderer.new();
+        this.renderer = struct Renderer;
+        this.renderer.init();
         this.running = false;
         this.maxElapsed = options.maxElapsed;
     }

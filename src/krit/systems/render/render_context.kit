@@ -19,24 +19,25 @@ struct RenderContext {
             window: this.window,
             camera: this.camera,
             offset: this.offset,
+            transform: this.transform,
         };
     }
 
-    public function addRect(key: Ptr[DrawKey], rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
+    public function addRect(key: Ptr[DrawKey], rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool = false) {
         this.transformMatrix(matrix);
         this.renderSystem.addRect(key, rect, matrix, color, flexibleLayer);
     }
 
-    public function addRectRaw(key: Ptr[DrawKey], rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool) {
+    public function addRectRaw(key: Ptr[DrawKey], rect: Ptr[Rectangle[Int]], matrix: Ptr[Matrix], color: ColorWithAlpha, flexibleLayer: Bool = false) {
         this.renderSystem.addRect(key, rect, matrix, color, flexibleLayer);
     }
 
-    public function addTriangle(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
+    public function addTriangle(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool = false) {
         this.transformTriangle(t);
         this.renderSystem.addTriangle(key, t, uv, color, flexibleLayer);
     }
 
-    public function addTriangleRaw(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool) {
+    public function addTriangleRaw(key: DrawKey, t: Ptr[Triangle], uv: Ptr[Triangle], color: ColorWithAlpha, flexibleLayer: Bool = false) {
         this.renderSystem.addTriangle(key, t, uv, color, flexibleLayer);
     }
 
@@ -76,6 +77,7 @@ struct RenderContext {
     // TODO: untransformTriangle
 
     function transformMatrix(m: Ptr[Matrix]): Ptr[Matrix] using implicit this.transform {
+        m.translate(this.offset.x, this.offset.y);
         if this.camera != null {
             this.camera.transformMatrix(m);
         }

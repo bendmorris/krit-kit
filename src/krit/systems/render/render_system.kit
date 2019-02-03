@@ -1,10 +1,8 @@
 struct RenderSystem {
     public var calls: Vector[DrawCall];
 
-    public static function new(allocator: Box[Allocator]) {
-        return struct Self {
-            calls: Vector.new(0x400),
-        };
+    public function init(allocator: Box[Allocator]) {
+        this.calls = Vector.new(0x400);
     }
 
     public function getDrawCall(key: Ptr[DrawKey], dims: Ptr[Triangle], flexibleLayer: Bool): Ptr[DrawCall] {

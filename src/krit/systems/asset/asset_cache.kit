@@ -55,6 +55,10 @@ struct AssetCache {
         this.assets.put(type, Map[CString, Shared[Void]].new(64));
     }
 
+    public function registered(type: CString): Bool {
+        return this.loaders.exists(type);
+    }
+
     public function get(type: CString, id: CString): Shared[Void] using implicit this.allocator {
         var loader = this.loaders[type];
         var assets = this.getAssets(type);

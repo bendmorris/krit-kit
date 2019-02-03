@@ -1,20 +1,12 @@
 struct Renderer {
-    public static function new(allocator: Box[Allocator]) {
-        var defaultColorShader = ColorShader.new();
-        var defaultTextureShader = TextureShader.new(None, None);
-        var renderBuffer: GLuint;
-        var renderData = Vector.new(1024);
-        var vao: GLuint;
-        glGenVertexArrays(1, vao);
-        glBindVertexArray(vao);
-        glGenBuffers(1, renderBuffer);
-        return struct Renderer {
-            defaultColorShader,
-            defaultTextureShader,
-            renderBuffer,
-            renderData,
-            vao
-        };
+    public function init(allocator: Box[Allocator]) {
+        this.defaultColorShader = ColorShader.new();
+        this.defaultTextureShader = TextureShader.new(None, None);
+        this.renderData = Vector.new(1024);
+        this.renderSystem.init();
+        glGenVertexArrays(1, this.vao);
+        glBindVertexArray(this.vao);
+        glGenBuffers(1, this.renderBuffer);
     }
 
     static const _ortho: CArray[Float, 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
@@ -53,7 +45,7 @@ struct Renderer {
         GL.checkForErrors("setBlendMode");
     }
 
-    public var renderSystem: RenderSystem = RenderSystem.new();
+    public var renderSystem: RenderSystem;
 
     var fb: Ptr[FrameBuffer] = null;
     var backFb: Ptr[FrameBuffer] = null;

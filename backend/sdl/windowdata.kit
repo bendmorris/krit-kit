@@ -1,9 +1,9 @@
 struct WindowData {
-    public var window: Ptr[SDL_Window];
-    public var surface: Ptr[SDL_Surface];
-    public var glContext: Ptr[SDL_GLContext];
+    public var window: Ptr[SDL_Window] = null;
+    public var surface: Ptr[SDL_Surface] = null;
+    public var glContext: SDL_GLContext = null;
 
-    public static function new(parent: Ptr[Window], title: CString, width: Int, height: Int): Self {
+    public function init(parent: Ptr[Window], title: CString, width: Int, height: Int) {
         // SDL
         if SDL_Init(SDL_INIT_VIDEO) < 0 {
             panic(SDL_GetError());
@@ -24,33 +24,31 @@ struct WindowData {
         // SDL_Image
         IMG_Init(${IMG_INIT_PNG: Int});
 
-        var window = SDL_CreateWindow(
+        this.window = SDL_CreateWindow(
             title,
             ${SDL_WINDOWPOS_UNDEFINED: Int},
             ${SDL_WINDOWPOS_UNDEFINED: Int},
             width, height,
             SDL_WINDOW_SHOWN as Int | SDL_WINDOW_OPENGL as Int | SDL_WINDOW_RESIZABLE as Int
         );
-        if window == null {
+        if this.window == null {
             panic(SDL_GetError());
         }
 
-        var glContext = SDL_GL_CreateContext(window);
-        if glContext == null {
+        this.glContext = SDL_GL_CreateContext(this.window);
+        if this.glContext == null {
             panic(SDL_GetError());
         }
-        var surface = SDL_GetWindowSurface(window);
+        this.surface = SDL_GetWindowSurface(this.window);
 
-        SDL_GL_MakeCurrent(window, glContext);
+        SDL_GL_MakeCurrent(this.window, this.glContext);
         SDL_GL_SetSwapInterval(1);
         glEnable(GL_BLEND);
         glEnable(GL_MULTISAMPLE);
         glActiveTexture(GL_TEXTURE0);
         glDisable(GL_DEPTH_TEST);
 
-        var w = struct Self {window, glContext, surface};
-        w.getSize(parent.dimensions.width, parent.dimensions.height);
-        return w;
+        this.getSize(parent.dimensions.width, parent.dimensions.height);
     }
 
     public function getSize(w: Ptr[Int], h: Ptr[Int]) {

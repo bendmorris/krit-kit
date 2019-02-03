@@ -1,5 +1,5 @@
 struct DrawContext {
-    public var context: Ptr[RenderContext];
+    public var context: Ptr[RenderContext] = undefined;
     public var blend: BlendMode = Alpha;
     public var smooth: Bool = true;
     public var color: Color = Color.White;
@@ -160,7 +160,7 @@ struct DrawContext {
         );
     }
 
-    public function circle(center: Ptr[Point], radius: Float, segments: Int) {
+    public function circle(center: Ptr[Point], radius: Float, segments: Int = 16) {
         const x = center.x;
         const y = center.y;
         const radians = 2 * PI / segments;
@@ -189,7 +189,7 @@ struct DrawContext {
         }
     }
 
-    public function circleFilled(center: Ptr[Point], radius: Float, segments: Int) {
+    public function circleFilled(center: Ptr[Point], radius: Float, segments: Int = 16) {
         var x = center.x;
         var y = center.y;
         const radians = (2 * PI) / segments;
@@ -206,7 +206,7 @@ struct DrawContext {
     }
 
     var points: Vector[Point] = Vector.new(64);
-    public function arc(center: Point, radius: Float, startRads: Float, angleRads: Float, segments: Int) {
+    public function arc(center: Point, radius: Float, startRads: Float, angleRads: Float, segments: Int = 16) {
         var radians = angleRads / segments;
         this.points.clear();
         this.points.ensureSize(segments + 1);

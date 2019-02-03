@@ -2,8 +2,15 @@ struct Rectangle[T: Numeric = Float] {
     public var point: Point[T] = struct Point[T];
     public var dimensions: Dimensions[T] = struct Dimensions[T];
 
-    public function eq(other: Self) {
+    public function eq(other: Ptr[Self]): Bool {
         return this.point.eq(other.point) && this.dimensions.eq(other.dimensions);
+    }
+
+    public function overlaps(other: Ptr[Self]): Bool {
+        return this.right >= other.left &&
+            this.bottom >= other.top &&
+            this.left <= other.right &&
+            this.top <= other.bottom;
     }
 
     public function setTo(x: T, y: T, w: T, h: T): Ptr[Self] {
@@ -22,6 +29,6 @@ struct Rectangle[T: Numeric = Float] {
         ($this.left) => $this.point.x;
         ($this.top) => $this.point.y;
         ($this.right) => $this.point.x + $this.dimensions.width;
-        ($this.bottom) => $this.point.x + $this.dimensions.height;
+        ($this.bottom) => $this.point.y + $this.dimensions.height;
     }
 }

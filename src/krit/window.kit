@@ -1,14 +1,13 @@
 struct Window {
-    public static function new(title: CString, width: Int, height: Int) {
-        var w: Window;
-        w.dimensions = struct Dimensions[Int];
-        w.windowData = WindowData.new(w, title, width, height);
-        return w;
-    }
-
     public var dimensions: Dimensions[Int];
     // WindowData is backend-specific, so it should be treated as opaque
     var windowData: WindowData;
+
+    public function init(title: CString, width: Int, height: Int) {
+        this.dimensions = Di();
+        this.windowData = struct WindowData;
+        this.windowData.init(this, title, width, height);
+    }
 
     public function destroy() {
         this.windowData.destroy();

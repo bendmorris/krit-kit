@@ -82,11 +82,19 @@ struct Point[T: Numeric = Float] {
     }
 
     public function add(other: Ptr[Self]): Ptr[Self] {
-        return this.setTo(this.x + other.x, this.y + other.y);
+        return this.add2(other.x, other.y);
+    }
+
+    public function add2(x: T, y: T): Ptr[Self] {
+        return this.setTo(this.x + x, this.y + y);
     }
 
     public function subtract(other: Ptr[Self]): Ptr[Self] {
-        return this.setTo(this.x - other.x, this.y - other.y);
+        return this.subtract2(other.x, other.y);
+    }
+
+    public function subtract2(x: T, y: T): Ptr[Self] {
+        return this.setTo(this.x - x, this.y - y);
     }
 
     public function zcross(other: Ptr[Self]): Float {
@@ -106,5 +114,11 @@ struct Point[T: Numeric = Float] {
 
     public function copy(): Self {
         return struct Self {x: this.x, y: this.y};
+    }
+}
+
+implement Hashable for Point[Int] {
+    public function hash(): Int {
+        return this.x << 16 + this.y;
     }
 }
