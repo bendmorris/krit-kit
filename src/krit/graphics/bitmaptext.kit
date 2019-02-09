@@ -371,9 +371,9 @@ enum AlignType {
      */
     public function getValue(): Float {
         match this {
-            LeftAlign => return 0;
             CenterAlign => return 0.5;
             RightAlign => return 1;
+            default => return 0;
         }
     }
 }

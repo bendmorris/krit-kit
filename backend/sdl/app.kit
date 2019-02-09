@@ -112,9 +112,9 @@ struct App {
 
     static function sdlMouseButton(b: Uint8): Mouse {
         match b {
-            (SDL_BUTTON_LEFT) => return Mouse.MouseLeftButton;
-            (SDL_BUTTON_MIDDLE) => return Mouse.MouseMiddleButton;
-            (SDL_BUTTON_RIGHT) => return Mouse.MouseRightButton;
+            SDL_BUTTON_MIDDLE => return Mouse.MouseMiddleButton;
+            SDL_BUTTON_RIGHT => return Mouse.MouseRightButton;
+            default => return Mouse.MouseLeftButton;
         }
     }
 }

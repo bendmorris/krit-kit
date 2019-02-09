@@ -69,7 +69,7 @@ struct AssetCache {
                 shared.ref();
                 return shared;
             }
-            None => using implicit this.allocator {
+            default => using implicit this.allocator {
                 var asset = loader.load(id);
                 assets.put(id, asset);
                 return asset;

@@ -119,6 +119,6 @@ struct Point[T: Numeric = Float] {
 
 implement Hashable for Point[Int] {
     public function hash(): Int {
-        return this.x << 16 + this.y;
+        return (this.y << 16) + this.y;
     }
 }

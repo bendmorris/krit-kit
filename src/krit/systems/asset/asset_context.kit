@@ -17,7 +17,7 @@ struct AssetContext {
             Some(x) => {
                 return x;
             }
-            None => {
+            default => {
                 var result = this.cache.get(type, id);
                 this.assets[type].put(id, result);
                 return result;
