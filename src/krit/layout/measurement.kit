@@ -10,3 +10,12 @@ enum Measurement {
         return 0;
     }
 }
+
+struct AnchoredMeasurement {
+    var value: Measurement;
+    var anchor: Float = 0;
+
+    public function measure(max: Float, size: Float): Float {
+        return this.value.measure(max) - size * this.anchor;
+    }
+}

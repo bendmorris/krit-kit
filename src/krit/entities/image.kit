@@ -22,7 +22,7 @@ struct Image {
     }
 }
 
-implement Graphic for Image {
+implement Entity for Image {
     public function render(render: Ptr[RenderContext]): Void {
         if !this.visible {
             return;

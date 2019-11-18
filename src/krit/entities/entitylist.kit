@@ -1,4 +1,4 @@
-struct GraphicList {
+struct EntityList {
     public var position: Point = struct Point;
     public var dimensions: Dimensions[Int] = struct Dimensions[Int];
     public var scale: ScaleFactor = struct ScaleFactor;
@@ -6,25 +6,25 @@ struct GraphicList {
     public var alpha: Float = 1;
     public var visible: Bool = true;
 
-    var graphics: Vector[Box[Graphic]];
+    var entities: Vector[Box[Entity]];
 
     public static function new(allocator: Box[Allocator], source: ImageRegion) {
-        return struct GraphicList {
-            graphics: Vector.new(16),
+        return struct EntityList {
+            entities: Vector.new(16),
         };
     }
 }
 
-implement Graphic for GraphicList {
+implement Entity for EntityList {
     public function render(context: Ptr[RenderContext]): Void {
-        for graphic in this.graphics {
-            graphic.render(context);
+        for entity in this.entities {
+            entity.render(context);
         }
     }
 
     public function update(context: Ptr[UpdateContext]): Void {
-        for graphic in this.graphics {
-            graphic.update(context);
+        for entity in this.entities {
+            entity.update(context);
         }
     }
 }

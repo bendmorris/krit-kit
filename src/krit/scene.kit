@@ -9,7 +9,7 @@ struct Scene {
     public var onRender: Signal1[Ptr[RenderContext]] = null;
     public var postRender: Signal1[Ptr[RenderContext]] = null;
 
-    public var graphics: Vector[Box[Graphic]] = Vector.new(0x100);
+    public var entities: Vector[Box[Entity]] = Vector.new(0x100);
     public var userData: Ptr[Void] = null;
 
     // scene-specific context
@@ -25,15 +25,15 @@ struct Scene {
     }
 
     public function destroy() using implicit this.allocator {
-        this.graphics.free();
+        this.entities.free();
     }
 
     public function update(context: Ptr[UpdateContext]) using implicit context {
-        this.input.update(context);
-        this.camera.update(context);
+        this.input.update();
+        this.camera.update();
         this.onUpdate.invoke();
-        for g in this.graphics {
-            g.update();
+        for e in this.entities {
+            e.update();
         }
         this.postUpdate.invoke();
     }
@@ -52,9 +52,9 @@ struct Scene {
         }
         context.camera = this.camera;
         this.onRender.invoke(context);
-        for g in this.graphics {
+        for e in this.entities {
             var render = context.copy();
-            g.render(render);
+            e.render(render);
         }
         this.postRender.invoke(context);
     }

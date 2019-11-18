@@ -64,7 +64,7 @@ struct NineSlice {
     }
 }
 
-implement Graphic for NineSlice {
+implement Entity for NineSlice {
     public function render(render: Ptr[RenderContext]): Void {
         // TODO: improve with static for
         render.transform = struct RenderTransform {scroll: this.scroll};

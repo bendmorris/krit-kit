@@ -54,7 +54,7 @@ struct TileMapProperties {
     }
 }
 
-implement Graphic for TileMap {
+implement Entity for TileMap {
     public function render(render: Ptr[RenderContext]): Void {
         if !this.visible {
             return;

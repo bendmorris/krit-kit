@@ -431,7 +431,7 @@ enum TextOpcode {
     // Image(image: Image, padding: Int);
 }
 
-implement Graphic for BitmapText {
+implement Entity for BitmapText {
     public function render(render: Ptr[RenderContext]): Void {
         var color: Color = this.color;
         var alpha: Float = this.alpha;

@@ -1,13 +1,13 @@
 import kit.sys.utils;
 
 struct App {
+    static inline var MAX_FRAMES: Int = 5;
     public var title: CString;
     public var engine: Engine;
     public var window: Window;
     public var renderer: Renderer;
 
     var running: Bool;
-    var maxElapsed: Float;
 
     public function init(allocator: Box[Allocator], options: Ptr[KritOptions]) using implicit allocator {
         this.window.init(options.title, options.width, options.height);
@@ -15,13 +15,12 @@ struct App {
         this.renderer = struct Renderer;
         this.renderer.init();
         this.running = false;
-        this.maxElapsed = options.maxElapsed;
     }
 
     public function run() {
         this.running = true;
-        var frameStart = time();
-        var frameDelta: Double = 1_f64 / this.engine.fps;
+        var frameDelta1: Double = 1_f64 / (this.engine.fps - 1);
+        var frameDelta2: Double = 1_f64 / (this.engine.fps + 4);
         var update = struct UpdateContext {
             engine: this.engine,
             window: this.window,
@@ -33,18 +32,32 @@ struct App {
             renderer: this.renderer,
             renderSystem: this.renderer.renderSystem,
         };
-        var frameCount: Float = 0;
+        var accumulator: Double = 0;
+        var elapsed: Double = 0;
+        var frameStart = time();
+        var frameFinish;
         while this.running {
             do {
-                update.elapsed = time() - frameStart;
-            } while update.elapsed < frameDelta;
-            if update.elapsed > this.maxElapsed {
-                update.elapsed = this.maxElapsed;
+                frameFinish = time();
+                elapsed = frameFinish - frameStart;
+            } while elapsed < frameDelta2;
+            accumulator += elapsed;
+            update.elapsed = update.frameCount = 0;
+            while accumulator >= frameDelta2 && update.frameCount < Self.MAX_FRAMES {
+                ++update.frameCount;
+                update.elapsed += frameDelta1;
+                accumulator -= frameDelta1;
+                if accumulator < 0 {
+                    accumulator = 0;
+                }
             }
-            frameCount += update.elapsed / frameDelta;
-            update.frameCount = frameCount as Int;
-            frameCount = frameCount % 1_i;
-            frameStart = time();
+            if update.frameCount != 1 {
+                printf("%i\n", update.frameCount);
+            }
+            if accumulator > frameDelta2 {
+                accumulator = accumulator % frameDelta2;
+            }
+            frameStart = frameFinish;
             this.handleEvents(update);
             this.engine.update(update);
             this.engine.render(render);
