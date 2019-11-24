@@ -65,6 +65,30 @@ struct NineSlice {
 }
 
 implement Entity for NineSlice {
+    static const resizable: Bool = true;
+
+    function getPosition(): Point {
+        return this.position;
+    }
+
+    function getSize(): Dimensions {
+        return D(
+            this.dimensions.width * this.scale.fullScaleX,
+            this.dimensions.height * this.scale.fullScaleY
+        );
+    }
+
+    function move(x: Float, y: Float) {
+        this.position.setTo(x, y);
+    }
+
+    function resize(w: Float, h: Float) {
+        this.scale.setTo(
+            w / this.dimensions.width,
+            h / this.dimensions.height
+        );
+    }
+
     public function render(render: Ptr[RenderContext]): Void {
         // TODO: improve with static for
         render.transform = struct RenderTransform {scroll: this.scroll};

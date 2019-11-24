@@ -1,0 +1,132 @@
+struct LayoutNode {
+    var _entity: Box[Entity];
+
+    var padding: CArray[Measurement, 4];
+    var measureX: AnchoredMeasurement;
+    var measureY: AnchoredMeasurement;
+    var width: Measurement = Percent(100);
+    var height: Measurement = Percent(100);
+    var stretch: Bool = false;
+    var spacing: Measurement;
+
+    rules {
+        ($this.left = $value) => $this.setX($value, 0);
+        ($this.right = $value) => $this.setX($value, 1);
+        ($this.centerX = $value) => $this.setX($value, 0.5);
+        ($this.top = $value) => $this.setY($value, 0);
+        ($this.bottom = $value) => $this.setY($value, 1);
+        ($this.centerY = $value) => $this.setY($value, 0.5);
+
+        ($this.paddingTop) => $this.padding[0];
+        ($this.paddingBottom) => $this.padding[1];
+        ($this.paddingLeft) => $this.padding[2];
+        ($this.paddingRight) => $this.padding[3];
+
+        // (for $child in $this {$e}) => match $this.children {
+        //     Some(__children) => {
+        //         for $child in __children {
+        //             ${e}
+        //         }
+        //     }
+        // }
+    }
+
+    function setX(v: Measurement, anchor: Float) {
+        this.measureX.value = v;
+        this.measureX.anchor = anchor;
+        return &this;
+    }
+
+    function setY(v: Measurement, anchor: Float) {
+        this.measureY.value = v;
+        this.measureY.anchor = anchor;
+        return &this;
+    }
+
+    function setWidth(v: Measurement) {
+        this.width = v;
+        return &this;
+    }
+
+    function setHeight(v: Measurement) {
+        this.height = v;
+        return &this;
+    }
+
+    function setPadding(top: Measurement, bottom: Measurement, left: Measurement, right: Measurement) {
+        this.paddingTop = top;
+        this.paddingBottom = bottom;
+        this.paddingLeft = left;
+        this.paddingRight = right;
+        return &this;
+    }
+
+    function setStretch(v: Bool) {
+        this.stretch = v;
+        return &this;
+    }
+
+    function attachEntity(e: Box[Entity]) {
+        this._entity = e;
+        return &this;
+    }
+
+    function reflow(x: Float, y: Float, availableWidth: Float, availableHeight: Float) {
+        const entitySize = if this._entity as &Void == null then D(0, 0) else this._entity.getSize();
+        availableWidth = this.width.measure(availableWidth);
+        availableHeight = this.height.measure(availableHeight);
+
+        var paddingTop = this.paddingTop.measure(availableHeight);
+        var paddingBottom = this.paddingBottom.measure(availableHeight);
+        var paddingLeft = this.paddingLeft.measure(availableWidth);
+        var paddingRight = this.paddingRight.measure(availableWidth);
+
+        var paddedHeight = availableHeight - paddingTop - paddingBottom;
+        var paddedWidth = availableWidth - paddingLeft - paddingRight;
+
+        var ex = this.measureX.measure(availableWidth, entitySize.width);
+        var ey = this.measureY.measure(availableHeight, entitySize.height);
+
+        if this._entity as &Void != null {
+            this._entity.move(ex, ey);
+            if this.stretch {
+                this._entity.resize(availableWidth, availableHeight);
+            }
+        }
+    }
+
+    function updateTree(context: Ptr[UpdateContext]) {
+        if this._entity as Ptr[Void] != null {
+            this._entity.update(context);
+        }
+        // for child in this {
+        //     child.updateTree(context);
+        // }
+    }
+
+    function renderTree(context: Ptr[RenderContext]) {
+        if this._entity as Ptr[Void] != null {
+            this._entity.render(context);
+        }
+        // for child in this {
+        //     child.renderTree(context);
+        // }
+    }
+}
+
+implement Entity for LayoutNode {
+    function update(context: Ptr[UpdateContext]) {
+        // TODO: optimize this away if nothing has changed?
+        this.reflow(
+            0,
+            0,
+            context.camera.width,
+            context.camera.height
+        );
+        this.updateTree(context);
+    }
+
+    function render(context: Ptr[RenderContext]) {
+        this.renderTree(context);
+    }
+}

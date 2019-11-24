@@ -1,4 +1,4 @@
-struct EntityList {
+struct EntityGroup {
     public var position: Point = struct Point;
     public var dimensions: Dimensions[Int] = struct Dimensions[Int];
     public var scale: ScaleFactor = struct ScaleFactor;
@@ -9,13 +9,13 @@ struct EntityList {
     var entities: Vector[Box[Entity]];
 
     public static function new(allocator: Box[Allocator], source: ImageRegion) {
-        return struct EntityList {
+        return struct EntityGroup {
             entities: Vector.new(16),
         };
     }
 }
 
-implement Entity for EntityList {
+implement Entity for EntityGroup {
     public function render(context: Ptr[RenderContext]): Void {
         for entity in this.entities {
             entity.render(context);

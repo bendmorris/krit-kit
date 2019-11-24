@@ -1,13 +1,49 @@
+enum ScaleMode {
+    NoScale;
+    Stretch;
+    KeepHeight(min: Int, max: Int);
+}
+
 struct Camera {
     public var position: Point = struct Point;
+    public var offset: Point = struct Point;
+    public var anchor: Point = struct Point;
     public var dimensions: Dimensions = struct Dimensions;
-    public var scaleMode: Box[CameraScaleMode] = empty;
     public var scale: ScaleFactor = struct ScaleFactor;
-    public var pixelSnapping: Bool = false;
-    public var userData: Ptr[Void] = null;
+    public var scaleMode: ScaleMode = NoScale;
+
+    public function center() {
+        this.anchor.setTo(0.5, 0.5);
+        return &this;
+    }
+
+    public function setLogicalSize(width: Int, height: Int) {
+        this.dimensions.setTo(width, height);
+        return &this;
+    }
+
+    public function noScale() {
+        this.scaleMode = NoScale;
+        return &this;
+    }
+
+    public function stretch() {
+        this.scaleMode = Stretch;
+        return &this;
+    }
+
+    public function keepHeight(minWidth: Int, maxWidth: Int) {
+        this.scaleMode = KeepHeight(minWidth, maxWidth);
+        return &this;
+    }
+
+    public function move(x: Float, y: Float) {
+        this.position.setTo(x, y);
+        return &this;
+    }
 
     public function transformPoint(transform: Ptr[RenderTransform], p: Ptr[Point]): Ptr[Point] {
-        var position = this.position.copy();
+        var position = this.position.copy().translate((this.offset.x + this.anchor.x * this.dimensions.width), this.anchor.y * this.dimensions.height);
         if transform != null {
             position.scale2(transform.scroll.x, transform.scroll.y);
         }
@@ -21,7 +57,7 @@ struct Camera {
             position.scale2(transform.scroll.x, transform.scroll.y);
         }
         return p.scale2(1 / this.scale.fullScaleX, 1 / this.scale.fullScaleY)
-            .add(position);
+            .add(position).translate(-(this.offset.x + this.anchor.x * this.dimensions.width), -this.anchor.y * this.dimensions.height);
     }
 
     public function scaleDimensions(transform: Ptr[RenderTransform], d: Ptr[Dimensions]): Ptr[Dimensions] {
@@ -39,7 +75,7 @@ struct Camera {
         if transform != null {
             position.scale2(transform.scroll.x, transform.scroll.y);
         }
-        return m.translate(-position.x, -position.y)
+        return m.translate(-position.x + (this.offset.x + this.anchor.x * this.dimensions.width), -position.y + this.anchor.y * this.dimensions.height)
             .scale(this.scale.fullScaleX, this.scale.fullScaleY);
     }
 
@@ -49,41 +85,45 @@ struct Camera {
             position.scale2(transform.scroll.x, transform.scroll.y);
         }
         return m.scale(1 / this.scale.fullScaleX, 1 / this.scale.fullScaleY)
-            .translate(position.x, position.y);
+            .translate(position.x - (this.offset.x + this.anchor.x * this.dimensions.width), position.y - this.anchor.y * this.dimensions.height);
     }
 
-    public function update(update: Ptr[UpdateContext]) {
-        if this.dimensions.width == 0 && this.dimensions.height == 0 {
-            this.dimensions.setTo(update.window.width, update.window.height);
-        }
-        if this.scaleMode as Ptr[Void] != null {
-            this.scaleMode.updateScale(this, update.window);
-        } else {
-            this.dimensions.setTo(update.window.width, update.window.height);
+    public function update(context: Ptr[UpdateContext]) {
+        match this.scaleMode {
+            NoScale => {
+                // nothing to do
+            }
+            Stretch => {
+                // stretch to show the camera's logical size
+                this.scale.setTo(
+                    context.window.width / this.dimensions.width,
+                    context.window.height / this.dimensions.height
+                );
+            }
+            KeepHeight(min, max) => {
+                var visibleWidth = context.window.width * this.dimensions.height / context.window.height;
+                if visibleWidth < min {
+                    visibleWidth = min;
+                } else if visibleWidth > max {
+                    visibleWidth = max;
+                }
+                this.scale.setTo(
+                    context.window.width / visibleWidth,
+                    context.window.height / this.dimensions.height
+                );
+                this.offset.x = (context.window.width / this.scale.fullScaleX - this.dimensions.width) / 2;
+            }
         }
     }
 
     rules {
         ($this.x) => $this.position.x;
         ($this.y) => $this.position.y;
+        ($this.anchorX) => $this.anchor.x;
+        ($this.anchorY) => $this.anchor.y;
         ($this.width) => $this.dimensions.x;
         ($this.height) => $this.dimensions.y;
-    }
-}
-
-trait CameraScaleMode {
-    function updateScale(camera: Ptr[Camera], window: Ptr[Window]): Void;
-}
-
-enum CameraType {
-    DefaultStretchScaleMode;
-}
-
-implement CameraScaleMode for CameraType {
-    public function updateScale(camera: Ptr[Camera], window: Ptr[Window]) {
-        camera.scale = struct ScaleFactor {
-            scaleX: window.width / camera.dimensions.width,
-            scaleY: window.height / camera.dimensions.height,
-        };
+        ($this.fullWidth) => $this.dimensions.x / $this.scale.fullScaleX;
+        ($this.fullHeight) => $this.dimensions.y / $this.scale.fullScaleY;
     }
 }

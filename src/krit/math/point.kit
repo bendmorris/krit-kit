@@ -21,37 +21,37 @@ struct Point[T: Numeric = Float] {
     public function setTo(x: T, y: T): Ptr[Self] {
         this.x = x;
         this.y = y;
-        return this;
+        return &this;
     }
 
     public function copyFrom(p: Ptr[Self]): Ptr[Self] {
         this.x = p.x;
         this.y = p.y;
-        return this;
+        return &this;
     }
 
     public function invert(): Ptr[Self] {
         this.x = -this.x;
         this.y = -this.y;
-        return this;
+        return &this;
     }
 
     public function scale(s: T): Ptr[Self] {
         this.x *= s;
         this.y *= s;
-        return this;
+        return &this;
     }
 
     public function scale2(sx: T, sy: T): Ptr[Self] {
         this.x *= sx;
         this.y *= sy;
-        return this;
+        return &this;
     }
 
     public function translate(x: T, y: T): Ptr[Self] {
         this.x += x;
         this.y += y;
-        return this;
+        return &this;
     }
 
     public function squaredDistance(other: Ptr[Self]): T {
@@ -74,7 +74,7 @@ struct Point[T: Numeric = Float] {
         var normal = size / this.length;
         this.x = this.x * normal as T;
         this.y = this.y * normal as T;
-        return this;
+        return &this;
     }
 
     public function perpendicular(): Ptr[Self] {

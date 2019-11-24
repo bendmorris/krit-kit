@@ -34,6 +34,7 @@ struct BitmapText {
     var assetContext: Ptr[AssetContext];
     var font: Ptr[BitmapFont];
     var rich: Bool = false;
+    var dirty: Bool = false;
 
     // var imageLoader: function (Ptr[BitmapText], CString) -> Ptr[ImageRegion] = null;
 
@@ -47,15 +48,19 @@ struct BitmapText {
         };
     }
 
+    function setFont(font: Ptr[BitmapFont]) {
+        this.font = font;
+        return &this;
+    }
+
     /**
      * Set simple text, without parsing.
      */
     public function setText(text: CString) {
         this.text = text;
         this.rich = false;
-        this.textDimensions.setTo(0, 0);
-        var parser = struct TextParser;
-        parser.parseText(this, text, false);
+        this.dirty = true;
+        return &this;
     }
 
     /**
@@ -64,14 +69,17 @@ struct BitmapText {
     public function setRichText(text: CString) {
         this.text = text;
         this.rich = true;
-        this.textDimensions.setTo(0, 0);
-        var parser = struct TextParser;
-        parser.parseText(this, text, true);
+        this.dirty = true;
+        return &this;
     }
 
     public function refresh() {
-        var parser = struct TextParser;
-        parser.parseText(this, this.text, this.rich);
+        if this.dirty {
+            var parser = struct TextParser;
+            parser.parseText(this, this.text, this.rich);
+            this.dirty = false;
+        }
+        return &this;
     }
 
     public function getBaseScale(): Float {
@@ -103,9 +111,11 @@ struct TextParser {
     var currentScale: Float = 1;
     var currentAlign: AlignType = LeftAlign;
     var newLineIndex: Int = 0;
+    var lastId: Int = -1;
 
     function parseText(txt: Ptr[BitmapText], s: CString, rich: Bool) using implicit txt {
         txt.opcodes.clear();
+        txt.textDimensions.setTo(0, 0);
         Self.word.clear();
         var st: Ptr[GlyphRenderStack] = Self.stack;
         st.clear();
@@ -168,12 +178,23 @@ struct TextParser {
                                 var maybeGlyph = txt.font.getGlyph(char);
                                 match maybeGlyph {
                                     Some(glyph) => {
-                                        this.wordSegmentLength += glyph.xAdvance * this.currentScale;
+                                        var xAdvance = glyph.xAdvance;
+                                        if this.lastId != -1 {
+                                            var key = (this.lastId << 32) | glyph.id;
+                                            if txt.font.kerningTable.exists(key) {
+                                                xAdvance += txt.font.kerningTable[key];
+                                            }
+                                        }
+                                        this.wordSegmentLength += xAdvance * this.currentScale;
                                         if char == c' ' {
-                                            this.wordSegmentTrailingWhitespace += glyph.xAdvance * this.currentScale;
+                                            this.wordSegmentTrailingWhitespace += xAdvance * this.currentScale;
                                         } else {
                                             this.wordSegmentTrailingWhitespace = 0;
                                         }
+                                        this.lastId = glyph.id;
+                                    }
+                                    None => {
+                                        this.lastId = -1;
                                     }
                                 }
                                 if char == c' ' {
@@ -242,6 +263,7 @@ struct TextParser {
             this.cursor.x = this.trailingWhitespace = 0;
             this.newLineIndex = txt.opcodes.length - 1;
         }
+        this.lastId = -1;
     }
 
     function flushWordSegment(txt: Ptr[BitmapText]) {
@@ -432,12 +454,50 @@ enum TextOpcode {
 }
 
 implement Entity for BitmapText {
-    public function render(render: Ptr[RenderContext]): Void {
+    function getPosition(): Point {
+        return this.position;
+    }
+
+    function getSize(): Dimensions {
+        this.refresh();
+        var s = this.getBaseScale();
+        return D(
+            s * this.textDimensions.width,
+            s * this.textDimensions.height
+        );
+    }
+
+    function move(x: Float, y: Float) {
+        this.position.setTo(x, y);
+    }
+
+    function resize(w: Float, h: Float) {
+        if this.options.wordWrap {
+            if (this.dimensions.width != w as Int) || (this.dimensions.height != h as Int) {
+                this.dirty = true;
+                this.dimensions.setTo(w as Int, h as Int);
+            }
+        } else {
+            var sx = w / this.dimensions.width;
+            var sy = h / this.dimensions.height;
+            if this.scale.fullScaleX != sx || this.scale.fullScaleY != sy {
+                this.dirty = true;
+                this.scale.setTo(
+                    w / this.dimensions.width,
+                    h / this.dimensions.height
+                );
+            }
+        }
+    }
+
+    function render(render: Ptr[RenderContext]): Void {
+        this.refresh();
         var color: Color = this.color;
         var alpha: Float = this.alpha;
         var baseScale: Float = (this.options.size as Float) / this.font.size;
         var scale: ScaleFactor = struct ScaleFactor;
         var thisLineHeight: Float = 0;
+        var lastId: Int = -1;
         var cursor = P();
         var custom: CustomRenderFunction = null;
         var totalWidth = if this.options.wordWrap then this.dimensions.width as Float else this.textDimensions.width;
@@ -461,6 +521,13 @@ implement Entity for BitmapText {
                         var maybeGlyph = this.font.getGlyph(char);
                         match maybeGlyph {
                             Some(glyph) => {
+                                var xAdvance = glyph.xAdvance;
+                                if lastId != -1 {
+                                    var key = (lastId << 32) | glyph.id;
+                                    if this.font.kerningTable.exists(key) {
+                                        xAdvance += this.font.kerningTable[key];
+                                    }
+                                }
                                 var renderData = struct GlyphRenderData {
                                     char,
                                     color,
@@ -470,6 +537,7 @@ implement Entity for BitmapText {
                                 };
                                 if char == c' ' || char == c'\t' {
                                     // it's a space; just advance the cursor and move on
+                                    lastId = -1;
                                 // TODO: escape characters
                                 } else {
                                     if custom != null {
@@ -491,7 +559,11 @@ implement Entity for BitmapText {
                                     };
                                     render.addRect(key, image.rect, matrix, renderData.color.withAlpha(renderData.alpha), false);
                                 }
-                                cursor.x += glyph.xAdvance * renderData.scale.fullScaleX * this.scale.fullScaleX * baseScale;
+                                cursor.x += xAdvance * renderData.scale.fullScaleX * this.scale.fullScaleX * baseScale;
+                                lastId = glyph.id;
+                            }
+                            None => {
+                                lastId = -1;
                             }
                         }
                     }

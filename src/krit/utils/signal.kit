@@ -22,6 +22,14 @@
     }
 }
 
+#[promote] abstract Signal3[A, B, C]: function(A, B, C) -> Void {
+    public function invoke(a: A, b: B, c: C) {
+        if this != (null as Self) {
+            this(a, b, c);
+        }
+    }
+}
+
 typedef TimeSignal = Signal1[Double];
 typedef UpdateSignal = Signal1[Ptr[UpdateContext]];
 typedef RenderSignal = Signal1[Ptr[RenderContext]];

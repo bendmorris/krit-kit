@@ -76,10 +76,7 @@ struct Renderer {
         // printf("triangles: %i\n", this.triangleCount);
     }
 
-    public function startScene(context: Ptr[RenderContext], scene: Ptr[Scene]) {
-    }
-
-    public function flushScene(context: Ptr[RenderContext], scene: Ptr[Scene]) {
+    public function flushBatch(context: Ptr[RenderContext]) {
         for call in this.renderSystem.calls {
             this.drawCall(context, call);
         }

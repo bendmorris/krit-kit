@@ -3,8 +3,9 @@ struct UpdateContext {
     public var frameCount: Int = 0;
     public var engine: Ptr[Engine];
     public var window: Ptr[Window];
-    public var scene: Ptr[Scene];
+    public var camera: Ptr[Camera];
     public var asset: Ptr[AssetContext];
+    public var input: Ptr[InputContext];
 
     public function copy(): Self {
         return struct UpdateContext {
@@ -12,7 +13,6 @@ struct UpdateContext {
             frameCount: this.frameCount,
             engine: this.engine,
             window: this.window,
-            scene: this.scene,
             asset: this.asset,
         };
     }

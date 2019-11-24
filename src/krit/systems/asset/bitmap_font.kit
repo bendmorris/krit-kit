@@ -7,6 +7,7 @@ typedef GlyphCharType = Char;
 
 struct GlyphData {
     public var page: Int = 0;
+    public var id: Size = 0;
     public var glyph: GlyphCharType = 0;
     public var rect: Rectangle[Int];
     public var offset: Point[Int];
@@ -21,6 +22,7 @@ struct BitmapFont {
     public var pages: Vector[ImageData];
     public var glyphData: Map[GlyphCharType, GlyphData];
     public var allocator: Box[Allocator];
+    public var kerningTable: Map[Int, Int];
 
     public static function load(allocator: Box[Allocator], path: CString): Shared[Void]
     using implicit allocator {
@@ -28,6 +30,7 @@ struct BitmapFont {
         (*shared) = struct BitmapFont {
             pages: Vector.new(4),
             glyphData: Map.new(256),
+            kerningTable: Map.new(),
             allocator
         };
         var userData: Ptr[BitmapFont] = shared;
@@ -61,6 +64,38 @@ struct BitmapFont {
     static function startElement(userData: Ptr[Void], name: Ptr[Const[Char]], attrs: Ptr[Ptr[Const[Char]]]): Void {
         var font: Ptr[BitmapFont] = userData;
         match name {
+            "kernings" => {
+                var attr = attrs;
+                while *attr != null {
+                    if *(attr + 1) != null {
+                        var key = *attr;
+                        var value = *(attr + 1);
+                        match key {
+                            "count" => font.kerningTable.resize((atoi(value) * 1.5) as Int);
+                        }
+                    }
+                    attr = attr + 2;
+                }
+            }
+            "kerning" => {
+                var first: Int = 0;
+                var second: Int = 0;
+                var amount: Int = 0;
+                var attr = attrs;
+                while *attr != null {
+                    if *(attr + 1) != null {
+                        var key = *attr;
+                        var value = *(attr + 1);
+                        match key {
+                            "first" => first = atoi(value);
+                            "second" => second = atoi(value);
+                            "amount" => amount = atoi(value);
+                        }
+                    }
+                    attr = attr + 2;
+                }
+                font.kerningTable[((first << 32) | second)] = amount;
+            }
             "info" => {
                 var attr = attrs;
                 while *attr != null {
@@ -113,6 +148,9 @@ struct BitmapFont {
                         var key = *attr;
                         var value = *(attr + 1);
                         match key {
+                            "id" => {
+                                glyphData.id = atoi(value);
+                            }
                             "x" => {
                                 glyphData.rect.x = atoi(value);
                             }

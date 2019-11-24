@@ -3,63 +3,62 @@ struct Engine {
     public var fps: Int;
     public var fixedFrameRate: Bool;
 
-    public var onUpdate: Signal = null;
-    public var postUpdate: Signal = null;
+    public var onUpdate: UpdateSignal = null;
+    public var postUpdate: UpdateSignal = null;
 
-    public var onRender: Signal1[Ptr[RenderContext]] = null;
-    public var postRender: Signal1[Ptr[RenderContext]] = null;
-
-    public var userData: Ptr[Void] = null;
+    public var onRender: RenderSignal = null;
+    public var postRender: RenderSignal = null;
 
     // global context
     public var input: InputContext = struct InputContext;
     public var asset: AssetContext = struct AssetContext;
 
-    var scenes: Vector[Ptr[Scene]] = Vector.new(8);
+    public var bgColor: Color = Color.Black;
+    public var bgAlpha: Float = 1;
+    public var camera: Camera = struct Camera;
 
-    public function update(context: Ptr[UpdateContext]) {
+    public var root: Box[Entity];
+    public var userData: Ptr[Void] = null;
+
+    public function update(context: Ptr[UpdateContext]) using implicit context {
         if this.paused {
             return;
         }
-        this.input.update(context);
-        var childContext = context.copy();
-        for scene in this.scenes {
-            childContext.scene = scene;
-            childContext.asset = scene.asset;
-            scene.update(childContext);
-        }
+        context.asset = this.asset;
+        context.camera = this.camera;
+        context.input = this.input;
+        this.onUpdate.invoke();
+        this.camera.update();
+        this.input.update();
+        this.root.update();
+        this.postUpdate.invoke();
     }
 
     public function render(context: Ptr[RenderContext]) using implicit context {
+        context.camera = this.camera;
         var renderer = context.renderer;
         renderer.startFrame();
-        renderer.startScene(null);
+
         this.onRender.invoke();
-        renderer.flushScene(null);
-        for scene in this.scenes {
-            renderer.startScene(scene);
-            scene.render();
-            renderer.flushScene(scene);
+        renderer.flushBatch();
+
+        if this.bgAlpha > 0 {
+            var key = struct DrawKey;
+            context.renderSystem.addRect(key,
+                struct Rectangle[Int] {
+                    point: struct Point[Int],
+                    dimensions: struct Dimensions[Int] {x: context.window.width, y: context.window.height},
+                },
+                struct Matrix,
+                this.bgColor.withAlpha(this.bgAlpha), false
+            );
         }
-        renderer.flushScene(null);
+        context.camera = this.camera;
+        this.root.render();
+        renderer.flushBatch();
+
         this.postRender.invoke();
-        renderer.flushScene(null);
+        renderer.flushBatch();
         renderer.flushFrame();
-    }
-
-    public function pushScene(scene: Ptr[Scene]) {
-        this.scenes.push(scene);
-    }
-
-    public function popScene() {
-        this.scenes.pop();
-    }
-
-    public function getActiveScenes(): Slice[Ptr[Scene]] {
-        return struct Slice {length: 1, data: &this.scene};
-    }
-
-    rules {
-        ($this.scene) => $this.scenes.unsafeLast;
     }
 }

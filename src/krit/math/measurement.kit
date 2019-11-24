@@ -5,7 +5,7 @@ enum Measurement {
     public function measure(max: Float): Float {
         match this {
             Absolute(v) => return v;
-            Percent(v) => return v * max;
+            Percent(v) => return v * max / 100;
         }
         return 0;
     }

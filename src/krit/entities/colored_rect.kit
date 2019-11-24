@@ -6,11 +6,13 @@ struct ColoredRect {
     public var alpha: Float = 1;
     public var visible: Bool = true;
 
-    public static function new(source: ImageRegion) {
+    public static function new() {
         return struct ColoredRect;
     }
 }
 
 implement Entity for ColoredRect {
-    public function render(context: Ptr[RenderContext]): Void {}
+    public function render(context: Ptr[RenderContext]): Void {
+        // TODO
+    }
 }

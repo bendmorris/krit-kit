@@ -1,0 +1,26 @@
+/**
+ * Everything below the Canvas in the scene graph will be rendered with the
+ * canvas' camera. Also controls the lifecycle of the camera.
+ */
+struct Canvas {
+    public var camera: Camera;
+    public var child: Box[Entity];
+}
+
+implement Entity for Canvas {
+    public function update(update: Ptr[UpdateContext]): Void {
+        this.camera.update(update);
+
+        const oldCamera = update.camera;
+        update.camera = this.camera;
+        this.child.update(update);
+        update.camera = oldCamera;
+    }
+
+    public function render(render: Ptr[RenderContext]): Void {
+        const oldCamera = render.camera;
+        render.camera = this.camera;
+        this.child.render(render);
+        render.camera = oldCamera;
+    }
+}

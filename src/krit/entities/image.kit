@@ -23,7 +23,31 @@ struct Image {
 }
 
 implement Entity for Image {
-    public function render(render: Ptr[RenderContext]): Void {
+    static const resizable: Bool = true;
+
+    function getPosition(): Point {
+        return this.position;
+    }
+
+    function getSize(): Dimensions {
+        return D(
+            this.region.width * this.scale.fullScaleX,
+            this.region.height * this.scale.fullScaleY
+        );
+    }
+
+    function move(x: Float, y: Float) {
+        this.position.setTo(x, y);
+    }
+
+    function resize(w: Float, h: Float) {
+        this.scale.setTo(
+            w / this.region.width,
+            h / this.region.height
+        );
+    }
+
+    function render(render: Ptr[RenderContext]): Void {
         if !this.visible {
             return;
         }

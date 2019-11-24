@@ -7,6 +7,9 @@ abstract ImageLoader: Void {
     using implicit allocator {
         // shortcut for now: just load from file
         var surface = IMG_Load(id);
+        if surface == null {
+            panic("IMG_Load(%s) is null\n", id);
+        }
         SDL_LockSurface(surface);
         var size = surface.w * surface.h;
         var pixels: Ptr[Uint8] = surface.pixels;

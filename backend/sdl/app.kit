@@ -25,6 +25,8 @@ struct App {
             engine: this.engine,
             window: this.window,
             asset: this.engine.asset,
+            camera: this.engine.camera,
+            input: this.engine.input,
         };
         var render = struct RenderContext {
             engine: this.engine,
@@ -51,9 +53,6 @@ struct App {
                     accumulator = 0;
                 }
             }
-            if update.frameCount != 1 {
-                printf("%i\n", update.frameCount);
-            }
             if accumulator > frameDelta2 {
                 accumulator = accumulator % frameDelta2;
             }
@@ -62,9 +61,11 @@ struct App {
             this.engine.update(update);
             this.engine.render(render);
 
-            // if ++frameCount % 10 == 0 {
-                // printf("%.4f FPS\n", 1_f64 / update.elapsed);
-            // }
+            static if defined(FPS) {
+                if ++update.frameCount % 10 == 0 {
+                    printf("%.4f FPS\n", 1_f64 / update.elapsed);
+                }
+            }
         }
     }
 
@@ -84,41 +85,20 @@ struct App {
                     var h = event.window.data2;
                     this.window.onResize(w, h);
                 }
-            } else if event.type == ${SDL_KEYDOWN: Uint} {
-                context.engine.input.key.registerDown(event.key.keysym.scancode as Uint8);
-                for scene in context.engine.getActiveScenes() {
-                    scene.input.key.registerDown(event.key.keysym.scancode as Uint8);
-                }
-            } else if event.type == ${SDL_KEYUP: Uint} {
-                context.engine.input.key.registerUp(event.key.keysym.scancode as Uint8);
-                for scene in context.engine.getActiveScenes() {
-                    scene.input.key.registerUp(event.key.keysym.scancode as Uint8);
-                }
-            } else if event.type == ${SDL_MOUSEBUTTONDOWN: Uint} {
-                context.engine.input.mouse.registerDown(Self.sdlMouseButton(event.button.button));
-                for scene in context.engine.getActiveScenes() {
-                    scene.input.mouse.registerDown(Self.sdlMouseButton(event.button.button));
-                }
-            } else if event.type == ${SDL_MOUSEBUTTONUP: Uint} {
-                context.engine.input.mouse.registerUp(Self.sdlMouseButton(event.button.button));
-                for scene in context.engine.getActiveScenes() {
-                    scene.input.mouse.registerUp(Self.sdlMouseButton(event.button.button));
-                }
-            } else if event.type == ${SDL_MOUSEMOTION: Uint} {
-                context.engine.input.mouse.registerPos(event.motion.x, event.motion.y);
-                for scene in context.engine.getActiveScenes() {
-                    scene.input.mouse.registerPos(event.motion.x, event.motion.y);
-                }
-            } else if event.type == ${SDL_WINDOWEVENT_ENTER: Uint} {
-                context.engine.input.mouse.registerOver(true);
-                for scene in context.engine.getActiveScenes() {
-                    scene.input.mouse.registerOver(true);
-                }
-            } else if event.type == ${SDL_WINDOWEVENT_LEAVE: Uint} {
-                context.engine.input.mouse.registerOver(false);
-                for scene in context.engine.getActiveScenes() {
-                    scene.input.mouse.registerOver(false);
-                }
+            } else if event.type == SDL_KEYDOWN {
+                context.input.key.registerDown(event.key.keysym.scancode as Uint8);
+            } else if event.type == SDL_KEYUP {
+                context.input.key.registerUp(event.key.keysym.scancode as Uint8);
+            } else if event.type == SDL_MOUSEBUTTONDOWN {
+                context.input.mouse.registerDown(Self.sdlMouseButton(event.button.button));
+            } else if event.type == SDL_MOUSEBUTTONUP {
+                context.input.mouse.registerUp(Self.sdlMouseButton(event.button.button));
+            } else if event.type == SDL_MOUSEMOTION {
+                context.input.mouse.registerPos(event.motion.x, event.motion.y);
+            } else if event.type == SDL_WINDOWEVENT_ENTER {
+                context.input.mouse.registerOver(true);
+            } else if event.type == SDL_WINDOWEVENT_LEAVE {
+                context.input.mouse.registerOver(false);
             }
         }
     }
