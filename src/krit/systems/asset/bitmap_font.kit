@@ -94,7 +94,7 @@ struct BitmapFont {
                     }
                     attr = attr + 2;
                 }
-                font.kerningTable[((first << 32) | second)] = amount;
+                font.kerningTable[((first << 16) | second)] = amount;
             }
             "info" => {
                 var attr = attrs;

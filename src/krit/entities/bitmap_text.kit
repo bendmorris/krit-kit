@@ -111,7 +111,6 @@ struct TextParser {
     var currentScale: Float = 1;
     var currentAlign: AlignType = LeftAlign;
     var newLineIndex: Int = 0;
-    var lastId: Int = -1;
 
     function parseText(txt: Ptr[BitmapText], s: CString, rich: Bool) using implicit txt {
         txt.opcodes.clear();
@@ -179,22 +178,12 @@ struct TextParser {
                                 match maybeGlyph {
                                     Some(glyph) => {
                                         var xAdvance = glyph.xAdvance;
-                                        if this.lastId != -1 {
-                                            var key = (this.lastId << 32) | glyph.id;
-                                            if txt.font.kerningTable.exists(key) {
-                                                xAdvance += txt.font.kerningTable[key];
-                                            }
-                                        }
                                         this.wordSegmentLength += xAdvance * this.currentScale;
                                         if char == c' ' {
                                             this.wordSegmentTrailingWhitespace += xAdvance * this.currentScale;
                                         } else {
                                             this.wordSegmentTrailingWhitespace = 0;
                                         }
-                                        this.lastId = glyph.id;
-                                    }
-                                    None => {
-                                        this.lastId = -1;
                                     }
                                 }
                                 if char == c' ' {
@@ -263,7 +252,6 @@ struct TextParser {
             this.cursor.x = this.trailingWhitespace = 0;
             this.newLineIndex = txt.opcodes.length - 1;
         }
-        this.lastId = -1;
     }
 
     function flushWordSegment(txt: Ptr[BitmapText]) {
@@ -522,12 +510,6 @@ implement Entity for BitmapText {
                         match maybeGlyph {
                             Some(glyph) => {
                                 var xAdvance = glyph.xAdvance;
-                                if lastId != -1 {
-                                    var key = (lastId << 32) | glyph.id;
-                                    if this.font.kerningTable.exists(key) {
-                                        xAdvance += this.font.kerningTable[key];
-                                    }
-                                }
                                 var renderData = struct GlyphRenderData {
                                     char,
                                     color,
@@ -535,6 +517,13 @@ implement Entity for BitmapText {
                                     scale,
                                     position: cursor
                                 };
+                                if lastId != -1 {
+                                    var key = (lastId << 16) | glyph.id;
+                                    if this.font.kerningTable.exists(key) {
+                                        cursor.x += this.font.kerningTable[key] * renderData.scale.fullScaleX * this.scale.fullScaleX * baseScale;
+                                        renderData.position.x = cursor.x;
+                                    }
+                                }
                                 if char == c' ' || char == c'\t' {
                                     // it's a space; just advance the cursor and move on
                                     lastId = -1;
