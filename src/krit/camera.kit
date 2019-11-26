@@ -1,6 +1,7 @@
 enum ScaleMode {
     NoScale;
     Stretch;
+    KeepWidth(min: Int, max: Int);
     KeepHeight(min: Int, max: Int);
 }
 
@@ -29,6 +30,11 @@ struct Camera {
 
     public function stretch() {
         this.scaleMode = Stretch;
+        return &this;
+    }
+
+    public function keepWidth(minHeight: Int, maxHeight: Int) {
+        this.scaleMode = KeepWidth(minHeight, maxHeight);
         return &this;
     }
 
@@ -99,6 +105,19 @@ struct Camera {
                     context.window.width / this.dimensions.width,
                     context.window.height / this.dimensions.height
                 );
+            }
+            KeepWidth(min, max) => {
+                var visibleHeight = context.window.height * this.dimensions.width / context.window.width;
+                if visibleHeight < min {
+                    visibleHeight = min;
+                } else if visibleHeight > max {
+                    visibleHeight = max;
+                }
+                this.scale.setTo(
+                    context.window.width / this.dimensions.width,
+                    context.window.height / visibleHeight
+                );
+                this.offset.y = (context.window.height / this.scale.fullScaleY - this.dimensions.height) / 2;
             }
             KeepHeight(min, max) => {
                 var visibleWidth = context.window.width * this.dimensions.height / context.window.height;

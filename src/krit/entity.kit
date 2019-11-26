@@ -1,7 +1,4 @@
 trait Entity {
-    static const resizable: Bool = false;
-    static const stretchable: Bool = false;
-
     public function render(context: Ptr[RenderContext]): Void {}
     public function update(context: Ptr[UpdateContext]): Void {}
     public function onAdd(context: Ptr[UpdateContext]): Void {}

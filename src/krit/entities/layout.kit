@@ -118,10 +118,10 @@ implement Entity for LayoutNode {
     function update(context: Ptr[UpdateContext]) {
         // TODO: optimize this away if nothing has changed?
         this.reflow(
-            0,
-            0,
-            context.camera.width,
-            context.camera.height
+            context.camera.offset.x / context.camera.scale.fullScaleX,
+            context.camera.offset.y / context.camera.scale.fullScaleY,
+            context.window.width / context.camera.scale.fullScaleX,
+            context.window.height / context.camera.scale.fullScaleY
         );
         this.updateTree(context);
     }

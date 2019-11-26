@@ -1,26 +1,26 @@
 struct Engine {
-    public var paused: Bool = false;
-    public var fps: Int;
-    public var fixedFrameRate: Bool;
+    var paused: Bool = false;
+    var fps: Int;
+    var fixedFrameRate: Bool;
 
-    public var onUpdate: UpdateSignal = null;
-    public var postUpdate: UpdateSignal = null;
+    var onUpdate: UpdateSignal = null;
+    var postUpdate: UpdateSignal = null;
 
-    public var onRender: RenderSignal = null;
-    public var postRender: RenderSignal = null;
+    var onRender: RenderSignal = null;
+    var postRender: RenderSignal = null;
 
     // global context
-    public var input: InputContext = struct InputContext;
-    public var asset: AssetContext = struct AssetContext;
+    var input: InputContext = struct InputContext;
+    var asset: AssetContext = struct AssetContext;
 
-    public var bgColor: Color = Color.Black;
-    public var bgAlpha: Float = 1;
-    public var camera: Camera = struct Camera;
+    var bgColor: Color = Color.Black;
+    var bgAlpha: Float = 1;
+    var camera: Camera = struct Camera;
 
-    public var root: Box[Entity];
-    public var userData: Ptr[Void] = null;
+    var root: Box[Entity];
+    var userData: Ptr[Void] = null;
 
-    public function update(context: Ptr[UpdateContext]) using implicit context {
+    function update(context: Ptr[UpdateContext]) using implicit context {
         if this.paused {
             return;
         }
@@ -34,13 +34,12 @@ struct Engine {
         this.postUpdate.invoke();
     }
 
-    public function render(context: Ptr[RenderContext]) using implicit context {
+    function render(context: Ptr[RenderContext]) using implicit context {
         context.camera = this.camera;
         var renderer = context.renderer;
         renderer.startFrame();
 
         this.onRender.invoke();
-        renderer.flushBatch();
 
         if this.bgAlpha > 0 {
             var key = struct DrawKey;
@@ -55,10 +54,7 @@ struct Engine {
         }
         context.camera = this.camera;
         this.root.render();
-        renderer.flushBatch();
 
         this.postRender.invoke();
-        renderer.flushBatch();
-        renderer.flushFrame();
     }
 }

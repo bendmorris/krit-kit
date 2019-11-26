@@ -1,0 +1,109 @@
+import kit.sys.file;
+import kit.sys.path;
+
+function readLine(s: CString): (String, CString) {
+    const len = s.length;
+    var chars = 0;
+    // skip leading newlines
+    while len > 0 && s[chars] == c'\n' {
+        s = s + 1;
+        --len;
+    }
+    while chars < len && s[chars] != 0 && s[chars] != c'\n' {
+        ++chars;
+    }
+    return (String.slice(s, chars), if chars < len then &s[chars] else null);
+}
+
+function parseTuple(x: String): (Int, Int) {
+    var a: Int = 0;
+    var b: Int = 0;
+    var index = 0;
+    while x[index] != c',' {
+        a *= 10;
+        a += x[index++] - c'0';
+    }
+    ++index;
+    ++index;
+    while index < x.length {
+        b *= 10;
+        b += x[index++] - c'0';
+    }
+    return (a, b);
+}
+
+struct TextureAtlas {
+    var regions: Map[CString, ImageRegion] = Map.new();
+    var images: Vector[ImageData] = Vector.new();
+
+    function read(assetContext: Ptr[AssetContext], path: Path, assetPrefix: CString) {
+        // read the entire atlas
+        var input = File.read(path);
+        var len = input.getSize();
+        var contents = malloc(len + 1);
+        var writeBuf = contents;
+        while len > 0 {
+            len -= input.readBytes(writeBuf, len);
+            writeBuf = writeBuf + 1;
+        }
+
+        var remaining: CString = contents;
+        while remaining != null {
+            // an atlas page
+            var line: String;
+            (line, remaining) = readLine(remaining);
+            if line.length == 0 || remaining == null {
+                break;
+            }
+            var pageName = line;
+            var l = assetPrefix.length + pageName.length + 1;
+            var s: CString = malloc(l);
+            strcpy(s, assetPrefix);
+            strncpy(&s[assetPrefix.length], pageName.data, pageName.length);
+            s[l] = 0;
+            const image = assetContext.getImage(s);
+            free(s);
+            this.images.push(image);
+
+            do {
+                (line, remaining) = readLine(remaining);
+            } while line.indexOf(c':') != -1 && remaining != null;
+            while line.length > 0 {
+                // an atlas region
+                var regionName = line.toCString();
+                var rect = Ri(0, 0, 0, 0);
+                var a: Int;
+                var b: Int;
+                do {
+                    (line, remaining) = readLine(remaining);
+                    const split = line.indexOf(c':');
+                    if split == -1 {
+                        break;
+                    }
+                    const key: String = line.substr(0, split);
+                    if strncmp(key.data, "  size", 6) == 0 {
+                        const size = line.substr(split + 2, line.length - split - 2);
+                        (a, b) = parseTuple(size);
+                        rect.width = a;
+                        rect.height = b;
+                    } else if strncmp(key.data, "  xy", 4) == 0 {
+                        const pos = line.substr(split + 2, line.length - split - 2);
+                        (a, b) = parseTuple(pos);
+                        rect.x = a;
+                        rect.y = b;
+                    }
+                } while remaining != null;
+                const region = struct ImageRegion {
+                    image,
+                    rect,
+                };
+                this.regions[regionName] = region;
+                if remaining == null {
+                    break;
+                }
+            }
+        }
+
+        free(contents);
+    }
+}

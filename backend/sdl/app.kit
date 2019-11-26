@@ -1,15 +1,23 @@
 import kit.sys.utils;
 
+struct RenderThreadData {
+    var renderMutex: Ptr[SDL_mutex];
+    var renderCondMutex: Ptr[SDL_mutex];
+    var renderCond: Ptr[SDL_cond];
+    var context: Ptr[RenderContext];
+    var killed: Bool = false;
+}
+
 struct App {
     static inline var MAX_FRAMES: Int = 5;
-    public var title: CString;
-    public var engine: Engine;
-    public var window: Window;
-    public var renderer: Renderer;
+    var title: CString;
+    var engine: Engine;
+    var window: Window;
+    var renderer: Renderer;
 
     var running: Bool;
 
-    public function init(allocator: Box[Allocator], options: Ptr[KritOptions]) using implicit allocator {
+    function init(allocator: Box[Allocator], options: Ptr[KritOptions]) using implicit allocator {
         this.window.init(options.title, options.width, options.height);
         this.engine = struct Engine {fps: options.fps};
         this.renderer = struct Renderer;
@@ -17,7 +25,7 @@ struct App {
         this.running = false;
     }
 
-    public function run() {
+    function run() {
         this.running = true;
         var frameDelta1: Double = 1_f64 / (this.engine.fps - 1);
         var frameDelta2: Double = 1_f64 / (this.engine.fps + 4);
@@ -38,6 +46,22 @@ struct App {
         var elapsed: Double = 0;
         var frameStart = time();
         var frameFinish;
+
+        var renderThreadData: RenderThreadData;
+        static if defined(SINGLE_THREAD) {} else {
+            const renderMutex = SDL_CreateMutex();
+            const renderCondMutex = SDL_CreateMutex();
+            const renderCond = SDL_CreateCond();
+            renderThreadData = struct RenderThreadData {
+                renderMutex,
+                renderCondMutex,
+                renderCond,
+                context: &render,
+            };
+            const renderThread = SDL_CreateThread(Self.renderLoop, "render", &renderThreadData);
+            SDL_DetachThread(renderThread);
+        }
+
         while this.running {
             do {
                 frameFinish = time();
@@ -59,17 +83,39 @@ struct App {
             frameStart = frameFinish;
             this.handleEvents(update);
             this.engine.update(update);
-            this.engine.render(render);
 
-            static if defined(FPS) {
-                if ++update.frameCount % 10 == 0 {
-                    printf("%.4f FPS\n", 1_f64 / update.elapsed);
+            if update.frameCount > 0 {
+                static if defined(SINGLE_THREAD) {} else {
+                    SDL_LockMutex(renderThreadData.renderMutex);
+                }
+                this.engine.render(render);
+                static if defined(SINGLE_THREAD) {
+                    Self.flushRender(render);
+                } else {
+                    SDL_UnlockMutex(renderThreadData.renderMutex);
+                    SDL_LockMutex(renderThreadData.renderCondMutex);
+                    SDL_CondSignal(renderThreadData.renderCond);
+                    SDL_UnlockMutex(renderThreadData.renderCondMutex);
+                    SDL_GL_MakeCurrent(this.window.windowData.window, this.window.windowData.glContext);
                 }
             }
+
+            static if defined(FPS) {
+                printf("%.4f FPS\n", 1_f64 / update.elapsed);
+            }
+        }
+
+        if defined(SINGLE_THREAD) {} else {
+            SDL_LockMutex(renderThreadData.renderMutex);
+            renderThreadData.killed = true;
+            SDL_LockMutex(renderThreadData.renderCondMutex);
+            SDL_CondSignal(renderThreadData.renderCond);
+            SDL_UnlockMutex(renderThreadData.renderCondMutex);
+            SDL_UnlockMutex(renderThreadData.renderMutex);
         }
     }
 
-    public function destroy() {
+    function destroy() {
         this.window.destroy();
     }
 
@@ -109,5 +155,33 @@ struct App {
             SDL_BUTTON_RIGHT => return Mouse.MouseRightButton;
             default => return Mouse.MouseLeftButton;
         }
+    }
+
+    static function renderLoop(data: Ptr[RenderThreadData]): Int {
+        static if defined(SINGLE_THREAD) {} else {
+            while true {
+                SDL_LockMutex(data.renderCondMutex);
+                SDL_CondWait(data.renderCond, data.renderCondMutex);
+                SDL_UnlockMutex(data.renderCondMutex);
+
+                if data.killed {
+                    SDL_DestroyCond(data.renderCond);
+                    SDL_DestroyMutex(data.renderMutex);
+                    SDL_DestroyMutex(data.renderCondMutex);
+                    return 0;
+                }
+
+                SDL_LockMutex(data.renderMutex);
+                SDL_GL_MakeCurrent(data.context.window.windowData.window, data.context.window.windowData.glContext);
+                Self.flushRender(data.context);
+                SDL_UnlockMutex(data.renderMutex);
+            }
+        }
+    }
+
+    static function flushRender(render: Ptr[RenderContext]) {
+        const renderer = render.renderer;
+        renderer.flushBatch(render);
+        renderer.flushFrame(render);
     }
 }
