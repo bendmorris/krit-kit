@@ -1,3 +1,1 @@
-Krit is a high performance 2D game engine, written in Kit.
-
-Pre-alpha, WIP!
+This was a fun experiment with [Kit](https://github.com/kitlang/kit)! To avoid spreading myself too thin, I've [moved development to C++](https://github.com/bendmorris/krit).
